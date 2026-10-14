@@ -1,0 +1,63 @@
+import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
+import { join } from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
+export const padCik = (value: string | number) => {
+  const digits = String(value).replace(/^CIK/i, '');
+  if (!/^\d{1,10}$/.test(digits)) throw new Error('CIK must contain 1–10 digits');
+  return digits.padStart(10, '0');
+};
+export class SecEdgar {
+  private queue: Promise<unknown> = Promise.resolve();
+  private lastStart = -Infinity;
+  private fetcher: typeof fetch;
+  private cacheDir: string;
+  private userAgent: string;
+  private now: () => number;
+  private sleep: (ms: number) => Promise<void>;
+  constructor(options: { fetch?: typeof fetch; cacheDir?: string; userAgent?: string; now?: () => number; sleep?: (ms: number) => Promise<void> } = {}) {
+    this.fetcher = options.fetch ?? fetch;
+    this.cacheDir = options.cacheDir ?? 'data/cache';
+    this.userAgent = options.userAgent ?? process.env.SEC_USER_AGENT ?? 'FinwispHome/0.1 (hackathon demo) set-SEC_USER_AGENT@example.com';
+    if (!options.userAgent && !process.env.SEC_USER_AGENT) console.warn('SEC_USER_AGENT is unset; using demo placeholder. Set AppName contact@example.com before regular use.');
+    if (!/\S+.*\s+.*[^\s@]+@[^\s@]+\.[^\s@]+/.test(this.userAgent)) throw new Error('SEC_USER_AGENT must use format AppName contact@example.com');
+    this.now = options.now ?? Date.now;
+    this.sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
+  }
+  async json(url: string, ttl: number): Promise<any> {
+    // Serialize cache checks and request starts across all endpoints in this client.
+    const task = this.queue.then(async () => {
+      const file = join(this.cacheDir, createHash('sha256').update(url).digest('hex') + '.json');
+      try { const cached = JSON.parse(await readFile(file, 'utf8')); if (this.now() - cached.time < ttl) return cached.data; } catch {}
+      const delay = Math.max(0, 210 - (this.now() - this.lastStart));
+      if (delay) await this.sleep(delay);
+      this.lastStart = this.now();
+      const response = await this.fetcher(url, { headers: { 'User-Agent': this.userAgent, Accept: 'application/json' }, signal: AbortSignal.timeout(15000) });
+      if (!response.ok) throw new Error(`SEC HTTP ${response.status} at ${url}`);
+      const data = await response.json();
+      await mkdir(this.cacheDir, { recursive: true });
+      const temporary = file + '.' + randomUUID();
+      await writeFile(temporary, JSON.stringify({ time: this.now(), data }));
+      await rename(temporary, file);
+      return data;
+    });
+    this.queue = task.catch(() => {});
+    return task;
+  }
+  tickers() { return this.json('https://www.sec.gov/files/company_tickers.json', 24 * 3600000); }
+  submissions(cik: string) { return this.json(`https://data.sec.gov/submissions/CIK${padCik(cik)}.json`, 6 * 3600000); }
+  companyfacts(cik: string) { return this.json(`https://data.sec.gov/api/xbrl/companyfacts/CIK${padCik(cik)}.json`, 6 * 3600000); }
+  async lookup(query: string) {
+    const q = query.trim().toUpperCase();
+    const rows = Object.values(await this.tickers()) as { cik_str: number; ticker: string; title: string }[];
+    return rows.filter(r => r.ticker.toUpperCase() === q || r.title.toUpperCase().includes(q))
+      .sort((a, b) => Number(b.ticker.toUpperCase() === q) - Number(a.ticker.toUpperCase() === q))
+      .slice(0, 5).map(r => ({ cik: padCik(r.cik_str), ticker: r.ticker, title: r.title }));
+  }
+  async resolve(value: string) {
+    if (/^(CIK)?\d{1,10}$/i.test(value)) return padCik(value);
+    const rows = await this.lookup(value);
+    const exact = rows.find(r => r.ticker.toUpperCase() === value.toUpperCase());
+    if (!exact) throw new Error(`Unknown ticker: ${value}`);
+    return exact.cik;
+  }
+}
