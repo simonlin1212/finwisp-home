@@ -5,3 +5,5 @@ dist/
 .local/
 data/cache/
 *.log
+
+data/profiles/

@@ -1,8 +1,40 @@
 # Finwisp Home
 
-An English, Alexa+-style research coach backend that teaches how to read companies with SEC filings. Educational use only, not investment advice. Voice, learning memory, and Home Hub UI are planned.
+An English home learning screen that teaches how to read companies with SEC filings. Voice and text input, learning cards, quizzes, and family memory are implemented. Educational use only, not investment advice.
 
-`CLI coach → official MCP client → Streamable HTTP /mcp → SEC EDGAR + compute/cards/quiz`
+`Home Hub / CLI → rule-based orchestrator → official MCP client → Streamable HTTP /mcp → SEC EDGAR + education + memory`
+
+## Run the Home Hub
+
+```sh
+npm ci --cache /tmp/finwisp-npm
+export SEC_CONTACT_EMAIL='<your SEC contact email>'
+npm run hub
+```
+
+Open **http://127.0.0.1:8796**. `npm run hub` builds the Vite/React UI and serves it with the Node/tsx host. It starts a loopback MCP server in the same process by default. Set `MCP_URL=http://127.0.0.1:8787/mcp` to connect to an existing server instead. `HOST` defaults to `127.0.0.1`; `HUB_PORT` defaults to `8796`. API Host and supplied Origin must name localhost, a loopback address, or the configured HOST. Keep one MCP process for shared SEC pacing and profile writes.
+
+Try “COST net margin”, “AAPL revenue growth”, or “continue where we left off”. The last request reads family memory and reviews concepts missed in the last three quizzes. Advice requests receive a refusal, three research questions, and a disclaimer before any tool runs. See [policy](docs/POLICY.md).
+
+The large microphone button uses browser SpeechRecognition with a webkit fallback. Read aloud uses speechSynthesis and is opt-in. Browser support and microphone permission vary; text input always works. Browser speech services may process audio remotely. There is no LLM in the app. Microphone input normally needs localhost or HTTPS.
+
+Build or preview separately:
+
+```sh
+npm run web:build
+npm run web:preview
+# UI-only preview: http://127.0.0.1:4173 (API requires the Hub)
+# For development with API proxy, run the Hub and then in a second terminal:
+npx --no-install vite --config web/vite.config.ts web
+```
+
+Stop Hub/preview/development with Ctrl+C. The host closes requests, official MCP client sessions and its owned MCP server on shutdown.
+
+`POST /api/ask` accepts `{text, profile_id?}` and streams SSE `step`, `result`, and `error` events. Step status is started/completed/failed. `POST /api/quiz/grade` accepts `{quiz_id, answers, profile_id?}`; `GET /api/profile?profile_id=family` reads memory. JSON requests are capped at 16 KiB. The web screen uses the default family profile.
+
+Quiz IDs derive from question content; a seeded Fisher–Yates shuffle makes options stable per ID. Definition distractors use other glossary meanings; numeric distractors prioritize wrong-year values and other margins, with small plausible offsets when facts are sparse. Keys and explanations stay in a server-side map (one hour, at most 1,000 quizzes). **No HMAC token is issued.** After restart or expiry, generate the quiz again; keys are never returned by `make_quiz`. Grading returns the correct text and explanation only after submission.
+
+Profiles are gitignored JSON under `data/profiles/` (`PROFILE_DIR` can override it). IDs allow 1–64 letters, digits, underscores or hyphens. Fields are `conceptsLearned` (count/lastSeen), `quizHistory` (score/missedConcepts/time), `companiesFollowed`, and `lastSession`. Writes serialize within one process and use a private temporary file followed by atomic rename. Files are capped at 64 KiB; history, companies and concepts at 100 each; summaries at 1,000 characters. Use one writer process per directory. Concepts explored are recorded when a lesson completes; counts indicate exposure, not proof of mastery. Quiz results are saved only when `profile_id` is supplied. Delete a profile JSON to reset it while the service is stopped. Profiles are local shared household memory, not authenticated accounts.
 
 Requires Node 20.19+ and uses `tsx`. No LLM or Python worker is started.
 
@@ -21,6 +53,7 @@ npm run smoke
 npm run demo -- COST
 npm run demo -- NVDA growth
 npm run live-check
+npm run hub:check
 npx --no-install tsc
 ```
 
@@ -33,8 +66,11 @@ Tests are offline and serial. Smoke starts a temporary loopback server, uses the
 | get_financials | ticker_or_cik, optional metrics and years (1–10) | Annual US GAAP facts with fiscal year, period end, unit, filed date, concept, accession |
 | compute_metrics | financials array from get_financials | Seven named metrics with null reasons and input provenance |
 | make_card | type (metric/concept/trend), glossary metric, computed | Structured card and text, optional trend chart series |
-| make_quiz | computed | Three deterministic questions; answer_keys in a separate instructor field |
-| grade_quiz | quiz_id, three zero-based answers | Correctness and score; quiz expires after one hour |
+| make_quiz | computed | Three deterministic questions with 3–4 shuffled options; no answer keys |
+| grade_quiz | quiz_id, three zero-based answers, optional profile_id | Per-question correctness, correct option text, explanation and score; optional profile_id saves results |
+| explain_concept | concept (glossary key) | English definition and disclaimer |
+| get_learning_profile | optional profile_id (default family) | Concepts, quizzes, followed companies, last session |
+| update_learning_profile | optional profile_id, event | Updated profile; events: concept, quiz, company, session |
 
 Default financial metrics: Revenue, NetIncomeLoss, GrossProfit, Assets, Liabilities, OperatingIncomeLoss, CostOfRevenue, NetCashProvidedByUsedInOperatingActivities. Revenue aliases are RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, and RevenueFromContractWithCustomerIncludingAssessedTax. CostOfRevenue also uses CostOfGoodsAndServicesSold. Concept names and slash-separated aliases remain accepted.
 

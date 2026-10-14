@@ -16,14 +16,17 @@ test('Origin rejection, SDK tool result, independent sessions and DELETE', async
     for (const origin of ['https://evil.example', 'null', 'http://localhost.evil.example']) assert.equal((await fetch(app.url, { method: 'POST', headers: { Origin: origin } })).status, 403);
     for (let i = 0; i < 2; i++) await clients[i].connect(transports[i]);
     assert.notEqual(transports[0].sessionId, transports[1].sessionId);
-    assert.equal((await clients[0].listTools()).tools.length, 7);
+    const tools=(await clients[0].listTools()).tools;assert.equal(tools.length,10);
+    assert.equal(tools.find(t=>t.name==='get_learning_profile')?.annotations?.readOnlyHint,true);
+    assert.equal(tools.find(t=>t.name==='grade_quiz')?.annotations?.readOnlyHint,false);
+    assert.ok(clients[0].getInstructions()!.length<=512);
     const r = await clients[0].callTool({ name: 'lookup_company', arguments: { query: 'AAPL' } });
     assert.equal((r.structuredContent as any).companies[0].ticker, 'AAPL');
     assert.deepEqual(JSON.parse((r.content as any)[0].text), r.structuredContent);
     const id = transports[0].sessionId!;
     await transports[0].terminateSession();
     assert.equal((await fetch(app.url, { method: 'DELETE', headers: { 'mcp-session-id': id } })).status, 404);
-    assert.equal((await clients[1].listTools()).tools.length, 7);
+    assert.equal((await clients[1].listTools()).tools.length, 10);
     await transports[1].terminateSession();
   } finally { for (const client of clients) await client.close(); await app.close(); await rm(cacheDir, { recursive: true, force: true }); }
 });

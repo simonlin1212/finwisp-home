@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { annualFinancials } from '../mcp-server/financials.js';
 import { costcoFacts } from './fixtures/costco.js';
 import { secUserAgent } from '../mcp-server/sources/sec-edgar.js';
+import { glossary } from '../mcp-server/glossary.js';
 import { educationHandlers as h } from '../mcp-server/education.js';
 import { startServer } from '../mcp-server/index.js';
 import { SecEdgar } from '../mcp-server/sources/sec-edgar.js';
@@ -42,8 +43,11 @@ test('cards, deterministic three-question quiz, grading and invalid id',async()=
  const {computed}=await h.compute_metrics({financials:input});
  for(const type of ['metric','concept','trend']) {const r=await h.make_card({type,metric:'net_margin',computed});assert.equal(r.card.type,type);assert.ok(r.text);if(type==='trend') assert.ok(r.card.chart!.series.length);}
  const quiz=await h.make_quiz({computed});assert.deepEqual(quiz,await h.make_quiz({computed}));assert.equal(quiz.questions.length,3);assert.ok(quiz.questions.every(q=>!('answer' in q)));
- assert.equal((await h.grade_quiz({quiz_id:quiz.quiz_id,answers:quiz.answer_keys})).score,3);
- assert.equal((await h.grade_quiz({quiz_id:quiz.quiz_id,answers:[2,2,2]})).score,0);
+ assert.ok(!('answer_keys' in quiz));
+ const answers=quiz.questions.map((q,i)=>q.options.indexOf(i===0?glossary.gross_margin:i===1?'10.0%':'It explains one aspect of a business, with context from filings.'));
+ assert.equal((await h.grade_quiz({quiz_id:quiz.quiz_id,answers})).score,3);
+ const wrong=answers.map((a,i)=>(a+1)%quiz.questions[i].options.length);
+ const grade=await h.grade_quiz({quiz_id:quiz.quiz_id,answers:wrong});assert.equal(grade.score,0);assert.ok(grade.results.every(r=>r.explanation && r.correct_option));
  await assert.rejects(h.grade_quiz({quiz_id:'missing',answers:[0,0,0]}));
 });
 test('teach executes actual HTTP MCP six-step plan and closes sessions; advice bypass',async()=>{
