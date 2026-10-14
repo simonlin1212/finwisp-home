@@ -20,6 +20,9 @@ export class ProfileStore {
   try { if((await stat(file)).size>65536) throw new Error('Profile exceeds size cap'); return stored.parse(JSON.parse(await readFile(file,'utf8'))); }
   catch(e:any) { if(e.code==='ENOENT') return {conceptsLearned:{},quizHistory:[],companiesFollowed:[],lastSession:''}; throw e; }
  }
+ reset(id='family'): Promise<Profile> {
+  id=profileId.parse(id);const work=this.queue.then(async()=>{await unlink(join(this.directory,`${id}.json`)).catch(e=>{if(e.code!=='ENOENT')throw e;});return this.get(id);});this.queue=work.catch(()=>{});return work;
+ }
  update(id: string, input: unknown): Promise<Profile> {
   id=profileId.parse(id); const event=eventSchema.parse(input);
   const work=this.queue.then(async()=>{

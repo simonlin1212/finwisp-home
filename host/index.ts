@@ -7,7 +7,7 @@ import { startServer } from '../mcp-server/index.js';
 import { askWith, withMcp, type ToolCaller } from '../orchestrator/index.js';
 import { educationSchemas } from '../mcp-server/education.js';
 import { RealtimeVoiceSession } from './voice/session.js';
-import { profileId } from '../mcp-server/memory.js';
+import { profiles, profileId } from '../mcp-server/memory.js';
 const askSchema=z.object({text:z.string().trim().min(1).max(2000),profile_id:profileId});
 async function body(req:IncomingMessage) {let size=0;const chunks:Buffer[]=[];for await(const c of req){size+=c.length;if(size>16384)throw new Error('Request too large');chunks.push(c);}return JSON.parse(Buffer.concat(chunks).toString());}
 export function validRequest(req:IncomingMessage,host:string) {
@@ -45,9 +45,10 @@ export async function startHub(options:{port?:number;host?:string;call?:ToolCall
     if(path==='/api/ask' && req.method==='POST') {
      const a=askSchema.parse(await body(req));res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','X-Accel-Buffering':'no'});res.flushHeaders();
      const send=(event:string,data:unknown)=>{if(!res.destroyed)res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);};
-     try{const result=await invoke(call=>askWith(call,a.text,a.profile_id,e=>send('step',e)));send('result',result);}catch(e){send('error',{error:e instanceof Error?e.message:String(e)});}finally{res.end();}return;
+     try{const result=await invoke(call=>askWith(call,a.text,a.profile_id,e=>send(e.step==='tool'?'tool':'step',e)));send('result',result);}catch(e){send('error',{error:e instanceof Error?e.message:String(e)});}finally{res.end();}return;
     }
     if(path==='/api/quiz/grade' && req.method==='POST'){const a=educationSchemas.grade_quiz.parse(await body(req));json(200,await invoke(call=>call('grade_quiz',a)));return;}
+    if(path==='/api/profile/reset' && req.method==='POST'){z.object({profile_id:z.literal('family')}).parse(await body(req));json(200,{profile:await profiles.reset('family')});return;}
     if(path==='/api/profile' && req.method==='GET'){const id=profileId.parse(new URL(req.url!,'http://localhost').searchParams.get('profile_id') ?? 'family');json(200,await invoke(call=>call('get_learning_profile',{profile_id:id})));return;}
     json(404,{error:'Unknown API route'});return;
    }

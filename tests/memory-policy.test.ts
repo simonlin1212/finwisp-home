@@ -27,7 +27,7 @@ test('policy tricky requests and educational questions',()=>{
 test('orchestrator policy bypass, continue reviews missed concepts and parses intents',async()=>{
  assert.equal((await askWith(async()=>{throw Error('must not call MCP');},'Will it go up?')).mode,'policy');
  const calls:string[]=[];const p={quizHistory:[{missedConcepts:['net_margin']}],lastSession:'Reviewed COST',companiesFollowed:['COST']};
- const result=await askWith(async(name,args)=>{calls.push(name);return name==='get_learning_profile'?{profile:p}:{concept:args.concept,text:'Profit after expenses.'};},'continue where we left off');assert.deepEqual(calls,['get_learning_profile','explain_concept']);assert.equal((result as any).review.length,1);
+ const result=await askWith(async(name,args)=>{calls.push(name);return name==='get_learning_profile'?{profile:p}:{concept:args.concept,text:'Profit after expenses.'};},'continue where we left off');assert.deepEqual(calls,['get_learning_profile','explain_concept','make_quiz']);assert.equal((result as any).review.length,1);
  assert.deepEqual(parseIntent('teach me about COST net margin'),{company:'COST',topic:'net_margin',continue:false});
 });
 test('card formatting preserves raw figures and quiz hides keys with varied deterministic positions',async()=>{

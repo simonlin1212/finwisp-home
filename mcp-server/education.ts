@@ -8,7 +8,7 @@ const computedSchema = z.array(z.object({ metric: z.enum(Object.keys(glossary) a
 export const educationSchemas = {
   compute_metrics: z.object({ financials }),
   make_card: z.object({ type: z.enum(['metric','concept','trend']), metric: z.enum(Object.keys(glossary) as [string,...string[]]), computed: computedSchema, company: z.string().max(200).optional() }),
-  make_quiz: z.object({ computed: computedSchema }),
+  make_quiz: z.object({ computed: computedSchema, seed: z.number().int().min(0).max(4294967295).optional(), concepts: z.array(z.enum(['education_policy',...Object.keys(glossary)] as [string,...string[]])).min(1).max(3).optional() }),
   grade_quiz: z.object({ quiz_id: z.string().max(100), answers: z.array(z.number().int().min(0).max(3)).length(3), profile_id: profileId.removeDefault().optional() }),
 };
 const quizzes = new Map<string, { expires: number; questions: {options:string[]; concept:string; explanation:string}[]; keys: number[] }>();
@@ -56,7 +56,7 @@ export const educationHandlers = {
     return { card, text: `${card.title}: ${card.body}`, note: 'Educational use only, not investment advice.' };
   },
   make_quiz: async (args: unknown) => {
-    const { computed } = educationSchemas.make_quiz.parse(args);
+    const { computed, seed: inputSeed, concepts } = educationSchemas.make_quiz.parse(args);
     const selected = computed.filter(c=>c.value!==null).slice(0,2);
     const base = selected.map((c,i)=> {
       if(i===1) {
@@ -68,8 +68,9 @@ export const educationHandlers = {
     });
     while(base.length<2) base.push({id:base.length,concept:'net_margin',prompt:'What does Net Margin measure?',options:[glossary.net_margin,glossary.gross_margin,glossary.operating_margin],explanation:glossary.net_margin});
     base.push({id:2,concept:'education_policy',prompt:'What can a financial ratio tell you?',options:['It explains one aspect of a business, with context from filings.','It determines a suitable allocation for your portfolio.','It predicts the next stock price from past profits.'],explanation:'Ratios help explain business performance; they do not predict prices or provide personal investment advice.'});
-    const quiz_id=createHash('sha256').update(JSON.stringify(base)).digest('hex');
-    let seed=parseInt(quiz_id.slice(0,8),16)>>>0;
+    if(concepts) { base.splice(0,base.length,...Array.from({length:3},(_,i)=>{const concept=concepts[i%concepts.length];return concept==='education_policy'?{id:i,concept,prompt:'What can a financial ratio tell you?',options:['It explains one aspect of a business, with context from filings.','It predicts stock prices.','It tells you what to buy.'],explanation:'Ratios explain businesses, not investment decisions.'}:{id:i,concept,prompt:`What does ${titleCase(concept)} measure?`,options:[glossary[concept],...Object.entries(glossary).filter(([m])=>m!==concept).slice(0,3).map(([,v])=>v)],explanation:glossary[concept]};})); }
+    const quiz_id=createHash('sha256').update(JSON.stringify({base,seed:inputSeed})).digest('hex');
+    let seed=inputSeed ?? parseInt(quiz_id.slice(0,8),16)>>>0;
     const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
     const keys:number[]=[];
     const questions=base.map(q=>{const options=q.options.map((text,index)=>({text,index}));for(let i=options.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[options[i],options[j]]=[options[j],options[i]];} keys.push(options.findIndex(o=>o.index===0)); return {...q,options:options.map(o=>o.text)};});

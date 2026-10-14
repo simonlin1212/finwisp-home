@@ -3,7 +3,7 @@ import { glossary } from '../mcp-server/glossary.js';
 import { isAdvice, policyResponse } from '../mcp-server/policy.js';
 import { profileId } from '../mcp-server/memory.js';
 export const plan = ['lookup','filings','financials','compute','cards','quiz'] as const;
-export type StepEvent = { step: string; status: 'started'|'completed'|'failed'; result?: unknown; tool?: string; error?: string };
+export type StepEvent = { step: string; status: 'started'|'completed'|'failed'; result?: unknown; tool?: string; error?: string; call_id?: string; duration_ms?: number };
 export type ToolCaller = (name:string,args:Record<string,unknown>)=>Promise<any>;
 export async function withMcp<T>(url:string,work:(call:ToolCaller)=>Promise<T>):Promise<T> {
  const client=new Client({name:'finwisp-coach',version:'0.1.0'}),transport=new StreamableHTTPClientTransport(new URL(url));
@@ -39,13 +39,28 @@ export async function teachWith(call:ToolCaller,company:string,topic='net_margin
  return {mode:'education',plan,company:match,filings,financials,compute,cards,quiz,...(profile ?? {})};
 }
 export async function askWith(call:ToolCaller,text:string,id='family',emit:(e:StepEvent)=>void=()=>{}) {
- id=profileId.parse(id); if(isAdvice(text)) return policyResponse();
+ id=profileId.parse(id);
+ const original=call;let sequence=0;
+ call=async(name,args)=>{const call_id=String(++sequence),start=performance.now();emit({step:'tool',tool:name,call_id,status:'started',duration_ms:0});try{const result=await original(name,args);emit({step:'tool',tool:name,call_id,status:'completed',duration_ms:Math.round(performance.now()-start)});return result;}catch(e){emit({step:'tool',tool:name,call_id,status:'failed',duration_ms:Math.round(performance.now()-start),error:String(e)});throw e;}};
+ if(isAdvice(text)) {
+  const refusal=policyResponse(),intent=parseIntent(text);
+  const company=text.match(/\b(nvidia|NVDA|costco|COST|apple|AAPL|microsoft|MSFT)\b/i)?.[0] ?? intent.company;
+  if(!company || !/\b(nvidia|NVDA|costco|COST|apple|AAPL|microsoft|MSFT)\b/i.test(text))return refusal;
+  try {
+   const lookup=await call('lookup_company',{query:company});const match=lookup.companies[0];if(!match)throw Error('Company not found');
+   const facts=await call('get_financials',{ticker_or_cik:match.cik,years:3});const {computed}=await call('compute_metrics',{financials:facts.financials});
+   const items=[{title:'Policy refusal',body:refusal.text}];
+   for(const [metric,title] of [['revenue_growth_yoy','1. How fast did revenue grow?'],['net_margin','2. How much revenue became profit?'],['liabilities_to_assets','3. How large are liabilities relative to assets?']]){const {card}=await call('make_card',{type:'metric',metric,computed,company:match.title});items.push({...card,title});}
+   return {...refusal,cards:{items},spoken_text:"I can't tell you whether to buy. Check these three filing questions yourself. Educational use only."};
+  }catch(e){return {...refusal,cards:{items:[{title:'Policy refusal',body:refusal.text},{title:'SEC data unavailable',body:'Try again when SEC data is available. '+String(e)}]}};}
+ }
  const intent=parseIntent(text);
  if(intent.continue) {
   emit({step:'memory',status:'started'});const {profile}=await call('get_learning_profile',{profile_id:id});emit({step:'memory',status:'completed'});
   const missed=[...new Set(profile.quizHistory.slice(-3).flatMap((q:any)=>q.missedConcepts))] as string[];
   const review=[];for(const concept of missed) review.push(Object.hasOwn(glossary,concept)?await call('explain_concept',{concept}):{concept,text:'Financial ratios explain businesses; they do not predict stock prices or decide investments.'});
-  return {mode:'review',text:profile.lastSession || 'Start by asking about a company and a concept, such as COST net margin.',profile,review};
+  const quiz=missed.length?await call('make_quiz',{computed:[],concepts:missed.slice(0,3)}):undefined;
+  return {mode:'review',quiz,text:profile.lastSession || 'Start by asking about a company and a concept, such as COST net margin.',profile,review};
  }
  if(!intent.company) return {mode:'education',text:'Enter a company name or ticker and a topic, such as COST net margin.'};
  return teachWith(call,intent.company,intent.topic,emit,id);
