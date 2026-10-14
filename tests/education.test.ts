@@ -63,3 +63,33 @@ test('comparative-only concept uses the accession current period from other fact
  const data={facts:{'us-gaap':{Revenues:{units:{USD:[{fy:2027,fp:'FY',form:'10-K',start:'2025-01-01',end:'2025-12-31',val:5,filed:'2028-02-01',accn:'x'}]}},Assets:{units:{USD:[{fy:2027,fp:'FY',form:'10-K',end:'2027-12-31',val:9,filed:'2028-02-01',accn:'x'}]}}}}};
  assert.equal(annualFinancials(data,['Revenue'],3)[0].values[0].fiscalYear,2025);
 });
+
+test('plain English cards keep raw SEC concepts only in sources',async()=>{
+ const source=(concept:string,value:number)=>({concept,value,unit:'USD',fiscalYear:2026,end:'2026-08-31',accessionNumber:'0000909832-26-000001'});
+ const computed=[{metric:'net_margin',fiscalYear:2026,value:9.2/303.2,sources:[source('NetIncomeLoss',9.2e9),source('RevenueFromContractWithCustomerExcludingAssessedTax',303.2e9)]}];
+ const {card}=await h.make_card({type:'metric',metric:'net_margin',company:'Costco',computed});
+ assert.equal(card.body,'In FY2026 Costco kept 3.0% of revenue as net income ($9.2B of $303.2B).');
+ assert.equal(card.sources[1].label,'Revenue');
+ const {sources,...visible}=card;assert.doesNotMatch(JSON.stringify(visible),/NetIncomeLoss|RevenueFromContract/);
+ assert.equal(sources[0].concept,'NetIncomeLoss');
+});
+test('numeric distractors are unique and visibly separated, including Costco 3.9 vs 3.8',async()=>{
+ for(const value of [.039,.038,.03,0,-.04,1.5,12.3]){
+  const computed=[{metric:'gross_margin',fiscalYear:2026,value:.12,sources:[]},{metric:'net_margin',fiscalYear:2026,value,sources:[]},{metric:'net_margin',fiscalYear:2025,value:value-.001,sources:[]}];
+  const quiz=await h.make_quiz({computed});const options=quiz.questions[1].options;
+  assert.equal(options.length,4);assert.equal(new Set(options).size,4);
+  const numbers=options.map(parseFloat);
+  for(let i=0;i<numbers.length;i++)for(let j=i+1;j<numbers.length;j++)assert.ok(Math.abs(numbers[i]-numbers[j])+1e-8>=Math.max(1.5,.3*Math.max(Math.abs(numbers[i]),Math.abs(numbers[j]))));
+  if(value===.039)assert.ok(!options.includes('3.8%'));
+ }
+});
+
+test('readable label map covers common SEC financial concepts',async()=>{
+ const {conceptLabel}=await import('../mcp-server/education.js');
+ for(const [concept,label] of Object.entries({RevenueFromContractWithCustomerExcludingAssessedTax:'Revenue',NetIncomeLoss:'Net income',OperatingIncomeLoss:'Operating income',CostOfGoodsAndServicesSold:'Cost of goods sold',NetCashProvidedByUsedInOperatingActivities:'Operating cash flow',Assets:'Assets',Liabilities:'Liabilities',GrossProfit:'Gross profit'}))assert.equal(conceptLabel(concept),label);
+});
+
+test('out-of-range percentage input fails without an unbounded distractor loop',async()=>{
+ const {numericOptions}=await import('../mcp-server/education.js');
+ assert.throws(()=>numericOptions(Number.MAX_VALUE),/too large/);
+});

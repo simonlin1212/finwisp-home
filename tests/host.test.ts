@@ -19,6 +19,10 @@ test('host serves UI, streams plan via mocked MCP, grades and persists review; r
  const post=(path:string,value:unknown,headers={})=>fetch(app.url+path,{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(value)});
  try{
  assert.match(await (await fetch(app.url)).text(),/Finwisp Home/);
+ assert.equal((await fetch(app.url+'/api/voice/status')).status,200);
+ assert.equal((await post('/api/voice/start',{explicit:false})).status,400);
+ assert.equal((await post('/api/voice/input',{text:'hello'})).status,400);
+ assert.equal((await post('/api/voice/stop',{})).status,200);
  const r=await post('/api/ask',{text:'COST net margin'});assert.equal(r.headers.get('content-type'),'text/event-stream');const stream=await r.text();assert.match(stream,/event: step/);assert.match(stream,/"status":"started"/);assert.match(stream,/"status":"completed"/);assert.match(stream,/event: result/);
  const result=JSON.parse(stream.split('\n\n').find(b=>b.startsWith('event: result'))!.split('\ndata: ')[1]);assert.ok(result.quiz);assert.ok(!('answer_keys' in result.quiz));assert.equal(result.profile.companiesFollowed[0],'COST');
  assert.equal((await post('/api/quiz/grade',{quiz_id:result.quiz.quiz_id,answers:[0,0,0]})).status,200);

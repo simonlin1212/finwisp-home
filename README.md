@@ -83,3 +83,11 @@ SEC requests are serialized at least 210 ms apart (under five per second). Run o
 See [compute design](docs/COMPUTE.md), [live verification](docs/LIVE_CHECK.md), [Codex HTTP configuration](docs/CODEX_HTTP_MCP.md), [before/after](docs/BEFORE_AFTER.md), and [friction log](FRICTION_LOG.md).
 
 SEC data may be delayed, revised, incomplete, or difficult to compare. Read original filings for context. This project provides education, never buy/sell advice.
+
+### Readable lessons, recording view, and voice preview
+
+Cards now explain results in plain English (for example, “In FY2026 Costco kept 3.0% of revenue as net income ($9.2B of $303.2B).”). This sentence is illustrative, not a new verified SEC claim. Raw SEC concept identifiers stay in card `sources`; cards show a small accession line. Numeric quiz options are unique and separated after rounding by at least 1.5 percentage points and 30% relative to the larger displayed magnitude.
+
+The Hub has larger responsive typography, an animated horizontal learning rail with friendly step names and MCP tool chips, card transitions, labelled trend axes, and coloured quiz feedback. Append `?demo=1` to hide tool diagnostics during a recording. Focus states, live announcements, and reduced-motion support remain available.
+
+`VOICE_ENGINE=browser` is the default. The UI Voice engine selector can choose a Codex preview; the host must also be enabled with `VOICE_ENGINE=codex`. Selecting the engine starts nothing. Only pressing the voice button starts app-server. Unavailable Codex voice falls back to Web Speech with a notice. See [VOICE.md](docs/VOICE.md) for the exact starter port, fake-process tests, untested live behavior, and Simon's Mac login/run instructions. The ordinary lesson pipeline and validation scripts start no model sessions.

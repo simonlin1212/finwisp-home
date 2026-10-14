@@ -7,7 +7,7 @@ const financials = z.array(z.object({ metric: z.string(), values: z.array(fact).
 const computedSchema = z.array(z.object({ metric: z.enum(Object.keys(glossary) as [string,...string[]]), fiscalYear: z.number().int(), value: z.number().finite().nullable(), reason: z.string().optional(), sources: z.array(fact).max(10) })).max(100);
 export const educationSchemas = {
   compute_metrics: z.object({ financials }),
-  make_card: z.object({ type: z.enum(['metric','concept','trend']), metric: z.enum(Object.keys(glossary) as [string,...string[]]), computed: computedSchema }),
+  make_card: z.object({ type: z.enum(['metric','concept','trend']), metric: z.enum(Object.keys(glossary) as [string,...string[]]), computed: computedSchema, company: z.string().max(200).optional() }),
   make_quiz: z.object({ computed: computedSchema }),
   grade_quiz: z.object({ quiz_id: z.string().max(100), answers: z.array(z.number().int().min(0).max(3)).length(3), profile_id: profileId.removeDefault().optional() }),
 };
@@ -34,9 +34,25 @@ export const educationHandlers = {
     return { computed, glossary, note: 'Educational use only, not investment advice.' };
   },
   make_card: async (args: unknown) => {
-    const { type, metric, computed } = educationSchemas.make_card.parse(args);
+    const { type, metric, computed, company } = educationSchemas.make_card.parse(args);
     const figures = computed.filter(v=>v.metric===metric);
-    const card = { type, title: titleCase(metric), body: `${glossary[metric]} ${figures.map(f => `FY${f.fiscalYear}: ${f.value === null ? 'Unavailable' : formatPercent(f.value)}${f.sources.filter(s=>s.unit==='USD').map(s=>` (${s.concept ?? 'source'}: ${formatUSD(s.value)})`).join('')}`).join('; ')}`, figures, ...(type==='trend' ? { chart: { series: figures.map(f=>({ year:f.fiscalYear, value:f.value })) } } : {}) };
+    const describe = (f: typeof figures[number]) => {
+      const prefix = `In FY${f.fiscalYear} ${company ?? 'the company'}`;
+      if(f.value === null) return `${prefix} has insufficient comparable data for ${titleCase(metric).toLowerCase()}.`;
+      const [a,b] = f.sources;
+      const amounts = a && b ? ` (${formatUSD(a.value)} of ${formatUSD(b.value)})` : a ? ` (reported amount: ${formatUSD(a.value)})` : '';
+      if(metric === 'net_margin') return `${prefix} kept ${formatPercent(f.value)} of revenue as net income${amounts}.`;
+      if(metric === 'gross_margin') return `${prefix} kept ${formatPercent(f.value)} of revenue as gross profit${amounts}.`;
+      if(metric === 'operating_margin') return `${prefix} earned ${formatPercent(f.value)} of revenue as operating income${amounts}.`;
+      if(metric === 'liabilities_to_assets') return `${prefix} reported liabilities equal to ${formatPercent(f.value)} of assets${amounts}.`;
+      if(metric === 'operating_cash_conversion') return `${prefix} generated operating cash flow equal to ${formatPercent(f.value)} of net income${amounts}.`;
+      return `${prefix} had ${titleCase(metric).toLowerCase()} of ${formatPercent(f.value)}.`;
+    };
+    const sources = figures.flatMap(f=>f.sources.map(s=>({...s,label:conceptLabel(s.concept ?? '')})));
+    const card = { type, title: titleCase(metric), body: type === 'concept' ? glossary[metric] : figures.map(describe).join(' '),
+      figures: figures.map(({sources,...f})=>f), sources,
+      ...(type==='trend' ? { chart: { unit:'percent', series: figures.map(f=>({ year:f.fiscalYear, value:f.value })) } } : {}) };
+
     return { card, text: `${card.title}: ${card.body}`, note: 'Educational use only, not investment advice.' };
   },
   make_quiz: async (args: unknown) => {
@@ -45,8 +61,7 @@ export const educationHandlers = {
     const base = selected.map((c,i)=> {
       if(i===1) {
         const value=formatPercent(c.value!);
-        const wrong=[...new Set([...computed.filter(v=>v.metric===c.metric && v.fiscalYear!==c.fiscalYear),...computed.filter(v=>v.fiscalYear===c.fiscalYear && v.metric.includes('margin')), ...computed.filter(v=>v.metric===c.metric)].filter(v=>v.value!==null && formatPercent(v.value!)!==value).map(v=>formatPercent(v.value!)))].slice(0,3);
-        for(const v of [c.value!+.01,c.value!-.01,c.value!*2]) if(wrong.length<3 && !wrong.includes(formatPercent(v)) && formatPercent(v)!==value) wrong.push(formatPercent(v));
+        const wrong=numericOptions(c.value!).slice(1);
         return {id:i,concept:c.metric,prompt:`What is ${titleCase(c.metric)} in FY${c.fiscalYear}?`,options:[value,...wrong],explanation:`${glossary[c.metric]} The computed FY${c.fiscalYear} value is ${value}.`};
       }
       return {id:i,concept:c.metric,prompt:`What does ${titleCase(c.metric)} measure?`,options:[glossary[c.metric],...Object.entries(glossary).filter(([m])=>m!==c.metric).slice(0,3).map(([,v])=>v)],explanation:glossary[c.metric]};
@@ -76,3 +91,24 @@ export const educationHandlers = {
 export const titleCase=(text:string)=>text.split('_').map(w=>w==='yoy'?'YoY':w==='cagr'?'CAGR':w[0].toUpperCase()+w.slice(1)).join(' ');
 export const formatPercent=(value:number)=>`${(value*100).toFixed(1)}%`;
 export function formatUSD(value:number) {const n=Math.abs(value);const [scale,suffix]=n>=1e12?[1e12,'T']:n>=1e9?[1e9,'B']:n>=1e6?[1e6,'M']:n>=1e3?[1e3,'K']:[1,''];return `${value<0?'-':''}$${(n/Number(scale)).toFixed(1)}${suffix}`;}
+
+export const CONCEPT_LABELS: Record<string,string> = {
+ Revenue:'Revenue', Revenues:'Revenue', RevenueFromContractWithCustomerExcludingAssessedTax:'Revenue',
+ RevenueFromContractWithCustomerIncludingAssessedTax:'Revenue', SalesRevenueNet:'Revenue',
+ NetIncomeLoss:'Net income', OperatingIncomeLoss:'Operating income', CostOfGoodsAndServicesSold:'Cost of goods sold',
+ CostOfRevenue:'Cost of goods sold', NetCashProvidedByUsedInOperatingActivities:'Operating cash flow',
+ Assets:'Assets', Liabilities:'Liabilities', GrossProfit:'Gross profit',
+};
+export const conceptLabel=(concept:string)=>CONCEPT_LABELS[concept] ?? 'Reported amount';
+// Compare rounded displayed values, using the larger magnitude for a symmetric relative gap.
+export function numericOptions(correct:number):string[] {
+ if(!Number.isFinite(correct) || Math.abs(correct)>Number.MAX_VALUE/1000)throw Error('Value is too large for a percentage quiz');
+ const values=[Number((correct*100).toFixed(1))];
+ const gap=Math.max(1.6,Math.abs(values[0])*.5);
+ for(let i=1;values.length<4 && i<=100;i++) {
+  const candidate=Number((values[0]+i*gap).toFixed(1));
+  if(values.every(v=>Math.abs(candidate-v)+1e-9>=Math.max(1.5,.3*Math.max(Math.abs(candidate),Math.abs(v))))) values.push(candidate);
+ }
+ if(values.length!==4)throw Error('Cannot create distinct percentage options');
+ return values.map(v=>`${v.toFixed(1)}%`);
+}

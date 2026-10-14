@@ -14,3 +14,15 @@ Implemented: Vite/React Home Hub, Web Speech API microphone and opt-in speech ou
 
 Remaining: device-specific integration, authenticated multi-household profiles, broader browser voice support, and production deployment. These are not required for the local Hub starter.
 Reference files remain unchanged. Live SEC checks with accession provenance are in [LIVE_CHECK.md](LIVE_CHECK.md); compute limitations are in [COMPUTE.md](COMPUTE.md).
+
+## Recording and voice starter update
+
+| Area | Before this update | After |
+|---|---|---|
+| Card wording | Raw XBRL tags and compact formula fragments | Plain-English result sentences; readable concept map; raw tags only in card sources; small accession line |
+| Numeric quiz | Near-identical values such as 3.9% and 3.8% | Four unique displayed values with ≥1.5 percentage-point and ≥30% relative pairwise gaps |
+| Progress | Small raw step identifiers | Animated horizontal rail: Find company → Read filings → Pull numbers → Compute → Make cards → Quiz; MCP tool chips |
+| Recording UI | Smaller type and compact spacing | Larger responsive type, card entrance transitions, labelled fiscal-year/value axes, quiz feedback panels; `?demo=1` hides diagnostics |
+| Voice | Browser Web Speech only | Browser remains default; explicit-start Codex JSON-RPC/realtime skeleton, SSE+POST bridge, fallback notice and fake-process tests |
+
+Codex voice remains untested live; this implementation started no model session. See [VOICE.md](VOICE.md) for port boundaries and Mac validation. No screenshot validation at the target resolutions was performed in this environment.
