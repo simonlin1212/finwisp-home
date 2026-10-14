@@ -10,7 +10,9 @@
   "scripts": {
     "mcp": "tsx mcp-server/index.ts",
     "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "demo": "tsx scripts/demo.ts",
+    "live-check": "tsx scripts/live-check.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/client": "^2.3.1",

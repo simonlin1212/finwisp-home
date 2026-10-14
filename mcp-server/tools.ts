@@ -1,16 +1,20 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { annualFinancials } from './financials.js';
+import { educationHandlers, educationSchemas } from './education.js';
 import { SecEdgar } from './sources/sec-edgar.js';
 export const NOTE = 'Educational use only, not investment advice.';
-export const DEFAULT_METRICS = ['Revenues/RevenueFromContractWithCustomerExcludingAssessedTax', 'NetIncomeLoss', 'GrossProfit', 'Assets', 'Liabilities'];
+export const DEFAULT_METRICS = ['Revenue', 'NetIncomeLoss', 'GrossProfit', 'Assets', 'Liabilities', 'OperatingIncomeLoss', 'CostOfRevenue', 'NetCashProvidedByUsedInOperatingActivities'];
 const identifier = z.string().trim().min(1).max(100);
 export const schemas = {
+  ...educationSchemas,
   lookup_company: z.object({ query: identifier }),
   get_filings: z.object({ ticker_or_cik: identifier, form: z.string().min(1).optional(), limit: z.number().int().min(1).max(20).default(10) }),
   get_financials: z.object({ ticker_or_cik: identifier, metrics: z.array(identifier).min(1).max(30).default(DEFAULT_METRICS), years: z.number().int().min(1).max(10).default(5) }),
 };
 export function handlers(sec: SecEdgar) {
   return {
+    ...educationHandlers,
     lookup_company: async (args: unknown) => { const { query } = schemas.lookup_company.parse(args); return { companies: await sec.lookup(query), source: 'https://www.sec.gov/files/company_tickers.json', note: NOTE }; },
     get_filings: async (args: unknown) => {
       const { ticker_or_cik, form, limit } = schemas.get_filings.parse(args);
@@ -23,23 +27,7 @@ export function handlers(sec: SecEdgar) {
     get_financials: async (args: unknown) => {
       const { ticker_or_cik, metrics, years } = schemas.get_financials.parse(args);
       const cik = await sec.resolve(ticker_or_cik), data = await sec.companyfacts(cik);
-      const financials = metrics.map(metric => {
-        const candidates = metric.split('/');
-        const name = candidates.find(name => data.facts?.['us-gaap']?.[name]);
-        const fact = name ? data.facts['us-gaap'][name] : undefined;
-        const values = Object.entries(fact?.units ?? {}).flatMap(([unit, rows]) => {
-          const byYear = new Map<number, any>();
-          for (const row of rows as any[]) {
-            if (row.form !== '10-K' || row.fp !== 'FY' || !Number.isInteger(row.fy)) continue;
-            // Exclude quarterly/YTD duration facts also filed within an annual report.
-            if (row.start) { const days = (Date.parse(row.end) - Date.parse(row.start)) / 86400000; if (days < 300 || days > 400) continue; }
-            const prior = byYear.get(row.fy);
-            if (!prior || row.filed > prior.filed || (row.filed === prior.filed && row.end > prior.end)) byYear.set(row.fy, row);
-          }
-          return [...byYear.values()].sort((a, b) => b.fy - a.fy).slice(0, years).map(row => ({ fiscalYear: row.fy, value: row.val, unit, end: row.end, accessionNumber: row.accn }));
-        });
-        return { metric, concept: name ?? null, values };
-      });
+      const financials = annualFinancials(data, metrics, years);
       return { cik, financials, source: `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, note: NOTE };
     },
   };

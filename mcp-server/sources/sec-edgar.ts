@@ -17,8 +17,7 @@ export class SecEdgar {
   constructor(options: { fetch?: typeof fetch; cacheDir?: string; userAgent?: string; now?: () => number; sleep?: (ms: number) => Promise<void> } = {}) {
     this.fetcher = options.fetch ?? fetch;
     this.cacheDir = options.cacheDir ?? 'data/cache';
-    this.userAgent = options.userAgent ?? process.env.SEC_USER_AGENT ?? 'FinwispHome/0.1 (hackathon demo) set-SEC_USER_AGENT@example.com';
-    if (!options.userAgent && !process.env.SEC_USER_AGENT) console.warn('SEC_USER_AGENT is unset; using demo placeholder. Set AppName contact@example.com before regular use.');
+    this.userAgent = options.userAgent ?? secUserAgent();
     if (!/\S+.*\s+.*[^\s@]+@[^\s@]+\.[^\s@]+/.test(this.userAgent)) throw new Error('SEC_USER_AGENT must use format AppName contact@example.com');
     this.now = options.now ?? Date.now;
     this.sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
@@ -60,4 +59,11 @@ export class SecEdgar {
     if (!exact) throw new Error(`Unknown ticker: ${value}`);
     return exact.cik;
   }
+}
+
+export function secUserAgent(env: NodeJS.ProcessEnv = process.env, warn = console.warn) {
+  if (env.SEC_USER_AGENT?.trim()) return env.SEC_USER_AGENT.trim();
+  const email = env.SEC_CONTACT_EMAIL?.trim() || 'contact@example.com';
+  if (!env.SEC_CONTACT_EMAIL?.trim()) warn('SEC_CONTACT_EMAIL is unset; using contact@example.com placeholder. Configure a real contact before regular use.');
+  return `${env.SEC_APP_NAME?.trim() || 'FinwispHome/0.1'} ${email}`;
 }
