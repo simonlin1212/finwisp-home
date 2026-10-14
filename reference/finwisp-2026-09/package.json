@@ -1,0 +1,43 @@
+{
+  "name": "finwisp",
+  "version": "0.1.0-dev.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "node dist-host/web.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.ts",
+    "test:preflight": "node scripts/validate-local.mjs preflight",
+    "test:critical": "node scripts/validate-local.mjs critical",
+    "test:diagnostic": "node scripts/validate-local.mjs tests",
+    "build:isolated": "node scripts/validate-local.mjs builds",
+    "build": "npm run typecheck && vite build && node scripts/build-runtime.mjs",
+    "runtime:prepare": "node scripts/prepare-runtime.mjs",
+    "runtime:python": "node scripts/prepare-python-runtime.mjs prepare",
+    "runtime:verify": "node scripts/prepare-python-runtime.mjs verify",
+    "probe:codex": "node scripts/probe-codex.ts",
+    "desktop:dev": "npm run runtime:prepare && npm run build && tauri dev",
+    "desktop:build": "npm run runtime:prepare && tauri build --bundles app",
+    "data:setup": "node scripts/setup-data-sources.mjs",
+    "data:test": ".local/data-sources/venv/bin/python -m unittest discover -s data-sources/tests -v && .local/data-sources/venv/bin/python -m unittest discover -s documents/tests -v"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-opener": "2.5.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.0"
+  }
+}
