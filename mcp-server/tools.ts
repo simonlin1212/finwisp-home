@@ -6,7 +6,7 @@ import { memoryHandlers, memorySchemas } from './memory.js';
 import { conceptSchema, explainConcept, INSTRUCTIONS } from './policy.js';
 import { SecEdgar } from './sources/sec-edgar.js';
 export const NOTE = 'Educational use only, not investment advice.';
-export const DEFAULT_METRICS = ['Revenue', 'NetIncomeLoss', 'GrossProfit', 'Assets', 'Liabilities', 'OperatingIncomeLoss', 'CostOfRevenue', 'NetCashProvidedByUsedInOperatingActivities'];
+export const DEFAULT_METRICS = ['Revenue', 'NetIncomeLoss', 'GrossProfit', 'Assets', 'Liabilities', 'OperatingIncomeLoss', 'CostOfRevenue', 'NetCashProvidedByUsedInOperatingActivities', 'NetInterestIncome'];
 const identifier = z.string().trim().min(1).max(100);
 export const schemas = {
   ...educationSchemas, ...memorySchemas, explain_concept: conceptSchema,

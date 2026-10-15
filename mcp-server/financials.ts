@@ -1,8 +1,16 @@
 export const ALIASES: Record<string, string[]> = {
   // Preference order breaks ties inside one filing: Revenues is total revenue,
   // while contract revenue can be a subset (Berkshire, Walmart).
-  Revenue: ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax'],
-  GrossProfit: ['GrossProfit'], NetIncomeLoss: ['NetIncomeLoss'], Assets: ['Assets'], Liabilities: ['Liabilities'],
+  // Banks (Wells Fargo) report total revenue as net interest income plus noninterest income,
+  // tagged RevenuesNetOfInterestExpense; it is the bank equivalent of Revenues.
+  Revenue: ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'RevenuesNetOfInterestExpense'],
+  GrossProfit: ['GrossProfit'],
+  // Caterpillar stopped tagging NetIncomeLoss after FY2010 and reports profit attributable to common
+  // shareholders instead; ProfitLoss (including noncontrolling interests) is the last resort.
+  NetIncomeLoss: ['NetIncomeLoss', 'NetIncomeLossAvailableToCommonStockholdersBasic', 'ProfitLoss'],
+  Assets: ['Assets'], Liabilities: ['Liabilities'],
+  // A bank's core earnings line: interest earned minus interest paid.
+  NetInterestIncome: ['InterestIncomeExpenseNet', 'InterestIncomeExpenseAfterProvisionForLoanLoss'],
   OperatingIncomeLoss: ['OperatingIncomeLoss'], CostOfRevenue: ['CostOfRevenue', 'CostOfGoodsAndServicesSold'],
   NetCashProvidedByUsedInOperatingActivities: ['NetCashProvidedByUsedInOperatingActivities'],
 };

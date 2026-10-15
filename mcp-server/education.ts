@@ -129,6 +129,8 @@ export const CONCEPT_LABELS: Record<string,string> = {
  NetIncomeLoss:'Net income', OperatingIncomeLoss:'Operating income', CostOfGoodsAndServicesSold:'Cost of goods sold',
  CostOfRevenue:'Cost of goods sold', NetCashProvidedByUsedInOperatingActivities:'Operating cash flow',
  Assets:'Assets', Liabilities:'Liabilities', GrossProfit:'Gross profit',
+ RevenuesNetOfInterestExpense:'Revenue (net of interest expense)', NetIncomeLossAvailableToCommonStockholdersBasic:'Net income to common shareholders',
+ ProfitLoss:'Net income incl. noncontrolling interests', InterestIncomeExpenseNet:'Net interest income',
 };
 export const conceptLabel=(concept:string)=>CONCEPT_LABELS[concept] ?? 'Reported amount';
 // Compare rounded displayed values, using the larger magnitude for a symmetric relative gap.
