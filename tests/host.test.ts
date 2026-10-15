@@ -21,7 +21,8 @@ test('host serves UI, streams plan via mocked MCP, grades and persists review; r
  assert.match(await (await fetch(app.url)).text(),/Finwisp Home/);
  assert.equal((await fetch(app.url+'/api/voice/status')).status,200);
  assert.equal((await post('/api/voice/start',{explicit:false})).status,400);
- assert.equal((await post('/api/voice/input',{text:'hello'})).status,400);
+ assert.equal((await post('/api/voice/start',{explicit:true})).status,400);assert.equal((await post('/api/voice/start',{explicit:true,sdp:'not sdp'})).status,400);
+ assert.equal((await post('/api/voice/input',{text:'hello'})).status,404);
  assert.equal((await post('/api/voice/stop',{})).status,200);
  const r=await post('/api/ask',{text:'COST net margin'});assert.equal(r.headers.get('content-type'),'text/event-stream');const stream=await r.text();assert.match(stream,/event: step/);assert.match(stream,/"status":"started"/);assert.match(stream,/"status":"completed"/);assert.match(stream,/event: result/);
  const result=JSON.parse(stream.split('\n\n').find(b=>b.startsWith('event: result'))!.split('\ndata: ')[1]);const events=stream.split('\n\n').filter(b=>b.startsWith('event: tool')).map(b=>JSON.parse(b.split('\ndata: ')[1]));assert.equal(events.length,calls.length*2);assert.equal(events.filter(e=>e.status==='started' && e.tool==='make_card').length,3);for(const e of events.filter(e=>e.status==='completed')){assert.ok(e.tool);assert.ok(e.duration_ms>=0);assert.ok(events.some(s=>s.call_id===e.call_id && s.status==='started'));}

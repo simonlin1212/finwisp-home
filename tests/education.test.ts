@@ -64,6 +64,23 @@ test('comparative-only concept uses the accession current period from other fact
  assert.equal(annualFinancials(data,['Revenue'],3)[0].values[0].fiscalYear,2025);
 });
 
+test('forward-dated estimates do not shift the filing fiscal year (Starbucks FY2025 10-K)',()=>{
+ const row=(start:string,end:string,val:number)=>({fy:2025,fp:'FY',form:'10-K',start,end,val,filed:'2025-11-14',accn:'sbux'});
+ const data={facts:{'us-gaap':{Revenues:{units:{USD:[row('2024-09-30','2025-09-28',37.2),row('2023-10-02','2024-09-29',36.2)]}},RestructuringAndRelatedCostExpectedCost1:{units:{USD:[{...row('','2026-09-27',1),start:undefined}]}}}}};
+ assert.deepEqual(annualFinancials(data,['Revenue'],3)[0].values.map(v=>[v.fiscalYear,v.value]),[[2025,37.2],[2024,36.2]]);
+});
+test('total Revenues wins over contract revenue reported in the same filing (Berkshire)',()=>{
+ const row=(val:number)=>({fy:2024,fp:'FY',form:'10-K',start:'2024-01-01',end:'2024-12-31',val,filed:'2025-02-24',accn:'brk'});
+ const data={facts:{'us-gaap':{RevenueFromContractWithCustomerExcludingAssessedTax:{units:{USD:[row(249.7)]}},Revenues:{units:{USD:[row(371.4)]}}}}};
+ assert.deepEqual(annualFinancials(data,['Revenue'],1)[0].values.map(v=>[v.value,v.concept]),[[371.4,'Revenues']]);
+});
+test('a concept the company stopped tagging does not return decade-old years (Mastercard net income)',()=>{
+ const row=(fy:number,val:number)=>({fy,fp:'FY',form:'10-K',start:`${fy}-01-01`,end:`${fy}-12-31`,val,filed:`${fy+1}-02-10`,accn:`ma${fy}`});
+ const data={facts:{'us-gaap':{Revenues:{units:{USD:[2023,2024,2025].map(y=>row(y,30+y-2023))}},NetIncomeLoss:{units:{USD:[2011,2012,2013].map(y=>row(y,2))}}}}};
+ const [revenue,income]=annualFinancials(data,['Revenue','NetIncomeLoss'],3);
+ assert.deepEqual(revenue.values.map(v=>v.fiscalYear),[2025,2024,2023]);assert.deepEqual(income.values,[]);
+});
+
 test('plain English cards keep raw SEC concepts only in sources',async()=>{
  const source=(concept:string,value:number)=>({concept,value,unit:'USD',fiscalYear:2026,end:'2026-08-31',accessionNumber:'0000909832-26-000001'});
  const computed=[{metric:'net_margin',fiscalYear:2026,value:9.2/303.2,sources:[source('NetIncomeLoss',9.2e9),source('RevenueFromContractWithCustomerExcludingAssessedTax',303.2e9)]}];
@@ -92,4 +109,36 @@ test('readable label map covers common SEC financial concepts',async()=>{
 test('out-of-range percentage input fails without an unbounded distractor loop',async()=>{
  const {numericOptions}=await import('../mcp-server/education.js');
  assert.throws(()=>numericOptions(Number.MAX_VALUE),/too large/);
+});
+test('numeric quiz answer is not always the smallest option and margins stay plausible',async()=>{
+ const ranks=Array(4).fill(0);
+ for(let k=1;k<=40;k++){
+  const value=k/50,computed=[{metric:'gross_margin',fiscalYear:2026,value:.4,sources:[]},{metric:'operating_margin',fiscalYear:2026,value,sources:[]}];
+  const options=(await h.make_quiz({computed})).questions[1].options.map(parseFloat),correct=Number((value*100).toFixed(1));
+  ranks[[...options].sort((a,b)=>a-b).indexOf(correct)]++;
+  assert.ok(options.every(o=>o>=-100 && o<=100),`${value}: ${options}`);
+ }
+ assert.ok(ranks.every(n=>n>0),JSON.stringify(ranks));
+});
+test('review quiz with one missed concept asks three different questions about it',async()=>{
+ for(const concept of ['net_margin','education_policy']){
+  const quiz=await h.make_quiz({computed:[],concepts:[concept]});
+  assert.equal(new Set(quiz.questions.map(q=>q.prompt)).size,3);assert.ok(quiz.questions.every(q=>q.concept===concept));
+  const answers=quiz.questions.map(q=>q.options.findIndex(o=>o===glossary[concept] || o==='Net Margin' || o==='Net income ÷ revenue' || o.startsWith('It explains') || o.startsWith('No. It describes')));
+  assert.equal((await h.grade_quiz({quiz_id:quiz.quiz_id,answers})).score,3);
+ }
+});
+test('no reported figures (20-F filer) gives explanatory cards and no duplicate questions',async()=>{
+ const quiz=await h.make_quiz({computed:[]});assert.equal(new Set(quiz.questions.map(q=>q.prompt)).size,3);
+ const {card}=await h.make_card({type:'trend',metric:'net_margin',computed:[],company:'TSMC'});assert.equal(card.body,'No annual 10-K figures for net margin were available for TSMC.');
+ // A bank files 10-Ks but has no gross margin: the card names the missing metric, not the whole company.
+ const bank=await h.make_card({type:'metric',metric:'gross_margin',computed:[{metric:'net_margin',fiscalYear:2024,value:0.3,sources:[]}],company:'JPMorgan Chase'});
+ assert.equal(bank.card.body,'No annual 10-K figures for gross margin were available for JPMorgan Chase.');
+});
+test('cash conversion is not computed against a net loss',async()=>{
+ const f=(metric:string,value:number)=>make(metric,2025,value);
+ const {computed}=await h.compute_metrics({financials:[f('Revenue',5e9),f('NetIncomeLoss',-3.6e9),f('NetCashProvidedByUsedInOperatingActivities',-3.2e9)]});
+ const cash=computed.find(c=>c.metric==='operating_cash_conversion')!;assert.equal(cash.value,null);
+ const {card}=await h.make_card({type:'metric',metric:'operating_cash_conversion',computed,company:'Rivian'});
+ assert.match(card.body,/net income of -\$3\.6B, so cash conversion is not meaningful/);assert.doesNotMatch(card.body,/88\.9%/);
 });

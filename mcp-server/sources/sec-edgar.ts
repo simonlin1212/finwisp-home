@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { aliasTicker, displayName, nameKeys, tickerForm } from '../companies.js';
 export const padCik = (value: string | number) => {
   const digits = String(value).replace(/^CIK/i, '');
   if (!/^\d{1,10}$/.test(digits)) throw new Error('CIK must contain 1–10 digits');
@@ -46,16 +47,22 @@ export class SecEdgar {
   submissions(cik: string) { return this.json(`https://data.sec.gov/submissions/CIK${padCik(cik)}.json`, 6 * 3600000); }
   companyfacts(cik: string) { return this.json(`https://data.sec.gov/api/xbrl/companyfacts/CIK${padCik(cik)}.json`, 6 * 3600000); }
   async lookup(query: string) {
-    const q = query.trim().toUpperCase();
+    const ticker = aliasTicker(query, true) ?? tickerForm(query), keys = nameKeys(query);
     const rows = Object.values(await this.tickers()) as { cik_str: number; ticker: string; title: string }[];
-    return rows.filter(r => r.ticker.toUpperCase() === q || r.title.toUpperCase().includes(q))
-      .sort((a, b) => Number(b.ticker.toUpperCase() === q) - Number(a.ticker.toUpperCase() === q))
-      .slice(0, 5).map(r => ({ cik: padCik(r.cik_str), ticker: r.ticker, title: r.title }));
+    // Rank whole-word name matches only: a bare substring turns "OK" into "BROKERS" and "US" into "BUSINESS".
+    const rank = (r: typeof rows[number]) => {
+      if (r.ticker.toUpperCase() === ticker) return 0;
+      const titles = nameKeys(r.title);
+      const ranks = keys.flatMap(key => titles.map(title => title === key ? 1 : title.startsWith(key + ' ') ? 2 : ` ${title} `.includes(` ${key} `) ? 3 : 9));
+      return Math.min(9, ...ranks) < 9 ? Math.min(...ranks) : -1;
+    };
+    return rows.map((r, i) => ({ r, i, rank: rank(r) })).filter(x => x.rank >= 0).sort((a, b) => a.rank - b.rank || a.i - b.i)
+      .slice(0, 5).map(({ r }) => ({ cik: padCik(r.cik_str), ticker: r.ticker, title: r.title, name: displayName(r.ticker, r.title) }));
   }
   async resolve(value: string) {
     if (/^(CIK)?\d{1,10}$/i.test(value)) return padCik(value);
     const rows = await this.lookup(value);
-    const exact = rows.find(r => r.ticker.toUpperCase() === value.toUpperCase());
+    const exact = rows.find(r => r.ticker.toUpperCase() === tickerForm(value));
     if (!exact) throw new Error(`Unknown ticker: ${value}`);
     return exact.cik;
   }

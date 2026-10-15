@@ -23,6 +23,6 @@ Reference files remain unchanged. Live SEC checks with accession provenance are 
 | Numeric quiz | Near-identical values such as 3.9% and 3.8% | Four unique displayed values with ≥1.5 percentage-point and ≥30% relative pairwise gaps |
 | Progress | Small raw step identifiers | Animated horizontal rail: Find company → Read filings → Pull numbers → Compute → Make cards → Quiz; MCP tool chips |
 | Recording UI | Smaller type and compact spacing | Larger responsive type, card entrance transitions, labelled fiscal-year/value axes, quiz feedback panels; `?demo=1` hides diagnostics |
-| Voice | Browser Web Speech only | Browser remains default; explicit-start Codex JSON-RPC/realtime skeleton, SSE+POST bridge, fallback notice and fake-process tests |
+| Voice | Browser Web Speech only | Browser remains default; explicit-start Codex realtime voice over WebRTC (SSE transcripts), fallback notice and fake-process tests |
 
-Codex voice remains untested live; this implementation started no model session. See [VOICE.md](VOICE.md) for port boundaries and Mac validation. No screenshot validation at the target resolutions was performed in this environment.
+Codex voice was checked live once with a synthetic voice track (see [VOICE.md](VOICE.md)); real microphone and speaker use is not yet tested. No screenshot validation at the target resolutions was performed in this environment.

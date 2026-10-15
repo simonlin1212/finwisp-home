@@ -1,6 +1,6 @@
 # Simon 的 Mac 语音运行指南
 
-此仓库当前在构建机 `/workspace/finwisp-home`，不是已经放在你的 Mac 上。需要 Node **20.19 或更高版本**、npm、已安装且已登录的 Codex CLI。普通页面和规则式教学不启动模型；只有选择 Codex 语音并点击麦克风才会启动实验性语音会话。实时语音的账号权限、协议版本和 Mac 音频链路尚未完成真实验证。
+此仓库当前在构建机 `/workspace/finwisp-home`，不是已经放在你的 Mac 上。需要 Node **20.19 或更高版本**、npm、已安装且已登录的 Codex CLI。普通页面和规则式教学不启动模型；只有选择 Codex 语音并点击麦克风才会启动实验性语音会话。Codex 语音走 WebRTC，用 ChatGPT 登录的 Codex 即可；2026-10-15 已用合成语音在 Chrome 上实测连通（见 [VOICE.md](VOICE.md)），真实麦克风和扬声器尚未实测。
 
 ## 1. 把项目放到 Mac
 
@@ -38,7 +38,7 @@ VOICE_ENGINE=codex npm run hub
 open 'http://127.0.0.1:8796/?demo=1'
 ```
 
-在浏览器中确认 **Voice engine** 为 **Codex · preview**，点击 **Tap to speak**，允许麦克风权限。说 “COST net margin”。预期有英文转写和语音输出。Codex 语音目前仅桥接转写/音频；它的工具输出尚不映射到网页学习卡片。要可靠展示卡片、测验、工具调用状态和记忆，选择 **Browser**，再次点击麦克风，或者在输入框输入同一句并点击 **Explore →**。点击 **End voice** 停止 Codex 音频。
+在浏览器中确认 **Voice engine** 为 **Codex · preview**，点击 **Tap to speak**，允许麦克风权限。说 “COST net margin”。预期有英文转写和语音输出；Codex 先说一句“正在查”，几十秒后才报出财报数字。Codex 语音的回答由模型生成；它的工具输出尚不映射到网页学习卡片。要可靠展示卡片、测验、工具调用状态和记忆，选择 **Browser**，再次点击麦克风，或者在输入框输入同一句并点击 **Explore →**。点击 **End voice** 停止 Codex 音频。
 
 录制前点击 **Reset demo profile** 清空 `family` 记忆。页面 `?demo=1` 仍显示工具 chips、状态和毫秒耗时。
 
@@ -70,4 +70,4 @@ open 'http://127.0.0.1:8796/?demo=1'
 
 先点击 **End voice**（如果正在语音），再在启动服务的终端按 **Ctrl+C**。宿主会关闭自己持有的 MCP 服务和语音子进程。不要终止其他人运行的 hub。
 
-本指南引用的 npm 脚本、`HUB_PORT`、`VOICE_ENGINE`、`SEC_CONTACT_EMAIL`、`CODEX_EXECUTABLE` 均已核对项目源码；Codex 登录命令已核对 CLI help。实现期间未启动真实模型或语音会话。
+本指南引用的 npm 脚本、`HUB_PORT`、`VOICE_ENGINE`、`SEC_CONTACT_EMAIL`、`CODEX_EXECUTABLE` 均已核对项目源码；Codex 登录命令已核对 CLI help。Codex 语音的实测范围见 [VOICE.md](VOICE.md)。

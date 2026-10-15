@@ -2,6 +2,7 @@ import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/cli
 import { glossary } from '../mcp-server/glossary.js';
 import { isAdvice, policyResponse } from '../mcp-server/policy.js';
 import { profileId } from '../mcp-server/memory.js';
+import { aliasTicker, displayName } from '../mcp-server/companies.js';
 export const plan = ['lookup','filings','financials','compute','cards','quiz'] as const;
 export type StepEvent = { step: string; status: 'started'|'completed'|'failed'; result?: unknown; tool?: string; error?: string; call_id?: string; duration_ms?: number };
 export type ToolCaller = (name:string,args:Record<string,unknown>)=>Promise<any>;
@@ -11,11 +12,22 @@ export async function withMcp<T>(url:string,work:(call:ToolCaller)=>Promise<T>):
  finally {await transport.terminateSession().catch(()=>{});await client.close();}
 }
 const aliases:Record<string,string>={revenue:'revenue_growth_yoy',growth:'revenue_growth_yoy',profitability:'net_margin','net income':'net_margin',liabilities:'liabilities_to_assets',cash:'operating_cash_conversion'};
+// Capitalised words people use in questions that are not the ticker they mean.
+const NOT_TICKERS=new Set(['I','A','OK','OKAY','HEY','ALEXA','US','USA','UK','EU','AI','CEO','CFO','CTO','IPO','EPS','PE','ETF','YOY','CAGR','FY','TTM','YTD','USD','GAAP','SEC','ROI','ROE','EBIT','EBITDA','API','IT','HR','PR','TV','PC','EV','EVS','GPU','CPU','AM','PM','INC','CO','LLC','LTD','NYSE','WHAT','HOW','WHY','WHO','WHEN','NO','YES','ME','MY']);
+const FILLER=/\b(ok|okay|hey|alexa|please|can|could|would|you|teach|me|us|about|explain|show|tell|learn|quiz|lesson|more|what|how|why|does|did|do|is|are|was|sell|sells|sold|buy|buys|bought|make|makes|made|offer|offers|own|owns|the|a|an|of|for|on|in|at|to|and|with|from|its|this|last|year|net|margins?|revenues?|growth|profitability|profits?|earnings|income|sales|cash|flow|operating|gross|trend|liabilities|assets|debt|conversion|ratio|metrics?|financials?|finances|reports?|company|stock|shares?|yoy|cagr)\b/gi;
 export function parseIntent(text:string) {
  const topic=Object.keys(glossary).find(k=>text.toLowerCase().includes(k.replaceAll('_',' ')) || text.toLowerCase().includes(k)) ?? Object.keys(aliases).find(k=>new RegExp(`\\b${k}\\b`,'i').test(text)) ?? 'net_margin';
- const ticker=text.match(/\b[A-Z]{1,5}\b/g)?.find(t=>!['I','FY','USD','WHAT','HOW'].includes(t));
- const known=text.match(/\b(costco|apple|nvidia|microsoft|amazon|tesla|alphabet|google)\b/i)?.[0];
- const company=ticker ?? known ?? text.replace(/\b(teach|me|about|explain|show|the|of|for|please|net|margin|revenue|growth|profitability|cash|operating|gross|trend|liabilities)\b/gi,'').trim();
+ // A known company name beats a capitalised word ("OK teach me Tesla", "Apple's AI").
+ const known=aliasTicker(text);
+ // A capital that starts a longer name is not a ticker ("T-Mobile" is not AT&T's T).
+ // In an all-capitals question, question words are not tickers ("TEACH ME ABOUT NVDA").
+ const shout=text===text.toUpperCase(),filler=new RegExp(`^(?:${FILLER.source})$`,'i');
+ const capitals=text.replace(/\b\w+&\w+\b/g,' ').match(/\b[A-Z]{1,5}(?:[.-][A-Z]{1,2})?\b(?![.-]?[A-Za-z])/g)?.filter(t=>!NOT_TICKERS.has(t)) ?? [];
+ const ticker=shout ? capitals.filter(t=>!filler.test(t)).at(-1) : capitals[0];
+ // Keep possessives on names (Lowe's is LOWES on file); lookup tries the name with and without them.
+ const named=text.replace(/[’‘]/g,"'").replace(/\b(what|that|it|there|here|who|let)'s\b/gi,'$1').replace(/[?!.,;:"“”]/g,' ').replace(FILLER,' ').replace(/\s+/g,' ').trim();
+ // "TEACH ME ABOUT NET": when every word is filler, the last capital is the ticker.
+ const company=known ?? ticker ?? (named || capitals.at(-1) || '');
  return {company,topic:aliases[topic] ?? topic,continue:/\bcontinue\b|where we left off|resume/i.test(text)};
 }
 export async function teachWith(call:ToolCaller,company:string,topic='net_margin',emit:(event:StepEvent)=>void=()=>{},id?:string) {
@@ -24,19 +36,22 @@ export async function teachWith(call:ToolCaller,company:string,topic='net_margin
  if(!Object.hasOwn(glossary,metric)) throw new Error('Unknown concept');
  const run=async(step:string,name:string,args:Record<string,unknown>)=>{emit({step,status:'started',tool:name});try{const result=await call(name,args);emit({step,status:'completed',tool:name,result});return result;}catch(e){emit({step,status:'failed',error:String(e)});throw e;}};
  const lookup=await run('lookup','lookup_company',{query:company});
- const match=lookup.companies.find((c:any)=>c.ticker.toUpperCase()===company.toUpperCase()) ?? lookup.companies[0];if(!match) throw new Error('Company not found');
- const companyLabel=({COST:'Costco',AAPL:'Apple',MSFT:'Microsoft',NVDA:'Nvidia'} as Record<string,string>)[match.ticker] ?? match.title;
+ const match=lookup.companies.find((c:any)=>c.ticker.toUpperCase()===company.toUpperCase().replace('.','-')) ?? lookup.companies[0];if(!match) throw new Error('Company not found');
+ const companyLabel=displayName(match.ticker,match.title);
  const filings=await run('filings','get_filings',{ticker_or_cik:match.cik,form:'10-K',limit:3});
  const financials=await run('financials','get_financials',{ticker_or_cik:match.cik,years:3});
  const compute=await run('compute','compute_metrics',{financials:financials.financials});
  const cards=await run('cards','make_card',{type:'trend',metric,computed:compute.computed,company:companyLabel});
  const conceptCard=await call('make_card',{type:'concept',metric,computed:[],company:companyLabel});
  const metricCard=await call('make_card',{type:'metric',metric,computed:compute.computed,company:companyLabel});
- cards.items=[cards.card,conceptCard.card,metricCard.card];
+ const hasFigures=financials.financials.some((f:any)=>f.values.length);
+ cards.items=hasFigures?[cards.card,conceptCard.card,metricCard.card]:[cards.card,conceptCard.card];
  const quiz=await run('quiz','make_quiz',{computed:compute.computed});
  let profile;
  if(id) {await call('update_learning_profile',{profile_id:id,event:{type:'company',company:match.ticker}});await call('update_learning_profile',{profile_id:id,event:{type:'concept',concept:metric}});profile=await call('update_learning_profile',{profile_id:id,event:{type:'session',summary:`Reviewed ${match.ticker}: ${metric.replaceAll('_',' ')}.`}});}
- return {mode:'education',plan,company:match,filings,financials,compute,cards,quiz,...(profile ?? {})};
+ // Foreign issuers file 20-F, not 10-K, so there is nothing to compute; say so instead of showing empty cards.
+ const text=hasFigures?undefined:filings.filings.length?`SEC EDGAR has no annual 10-K figures for ${companyLabel} yet.`:`${companyLabel} has no annual 10-K report on SEC EDGAR. Companies based outside the US usually file a 20-F instead, which Finwisp Home does not read yet.`;
+ return {mode:'education',plan,company:{...match,name:companyLabel},filings,financials,compute,cards,quiz,...(text?{text}:{}),...(profile ?? {})};
 }
 export async function askWith(call:ToolCaller,text:string,id='family',emit:(e:StepEvent)=>void=()=>{}) {
  id=profileId.parse(id);
@@ -50,10 +65,11 @@ export async function askWith(call:ToolCaller,text:string,id='family',emit:(e:St
    const lookup=await call('lookup_company',{query:company});const match=lookup.companies[0];if(!match)throw Error('Company not found');
    const facts=await call('get_financials',{ticker_or_cik:match.cik,years:3});const {computed}=await call('compute_metrics',{financials:facts.financials});
    const items=[{title:'Policy refusal',body:refusal.text}];
-   for(const [metric,title] of [['revenue_growth_yoy','1. How fast did revenue grow?'],['net_margin','2. How much revenue became profit?'],['liabilities_to_assets','3. How large are liabilities relative to assets?']]){const {card}=await call('make_card',{type:'metric',metric,computed,company:match.title});items.push({...card,title});}
+   for(const [metric,title] of [['revenue_growth_yoy','1. How fast did revenue grow?'],['net_margin','2. How much revenue became profit?'],['liabilities_to_assets','3. How large are liabilities relative to assets?']]){const {card}=await call('make_card',{type:'metric',metric,computed,company:displayName(match.ticker,match.title)});items.push({...card,title});}
    return {...refusal,cards:{items},spoken_text:"I can't tell you whether to buy. Check these three filing questions yourself. Educational use only."};
   }catch(e){return {...refusal,cards:{items:[{title:'Policy refusal',body:refusal.text},{title:'SEC data unavailable',body:'Try again when SEC data is available. '+String(e)}]}};}
  }
+ if(/[\u3400-\u9fff]/.test(text)) return {mode:'education',text:'Finwisp Home understands English questions for now. Try “Teach me about Costco net margin.”'};
  const intent=parseIntent(text);
  if(intent.continue) {
   emit({step:'memory',status:'started'});const {profile}=await call('get_learning_profile',{profile_id:id});emit({step:'memory',status:'completed'});

@@ -36,11 +36,7 @@ export async function startHub(options:{port?:number;host?:string;call?:ToolCall
      const heartbeat=setInterval(()=>res.write(': heartbeat\n\n'),15000);
      res.on('close',()=>{unsubscribe();clearInterval(heartbeat);void voice.stop();});return;
     }
-    if(path==='/api/voice/start' && req.method==='POST'){const a=z.object({explicit:z.literal(true)}).parse(await body(req));json(200,await voice.start(a.explicit));return;}
-    if(path==='/api/voice/input' && req.method==='POST'){
-     const a=z.object({text:z.string().min(1).max(2000).optional(),audio:z.object({data:z.string().min(1).max(12000).regex(/^[A-Za-z0-9+/=]+$/),sampleRate:z.literal(24000),numChannels:z.literal(1)}).optional()}).refine(v=>!!v.text!==!!v.audio).parse(await body(req));
-     await voice.input(a);json(200,{ok:true});return;
-    }
+    if(path==='/api/voice/start' && req.method==='POST'){const a=z.object({explicit:z.literal(true),sdp:z.string().max(15000).startsWith('v=0')}).parse(await body(req));json(200,await voice.start(a.explicit,a.sdp));return;}
     if(path==='/api/voice/stop' && req.method==='POST'){await voice.stop();json(200,{ok:true});return;}
     if(path==='/api/ask' && req.method==='POST') {
      const a=askSchema.parse(await body(req));res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','X-Accel-Buffering':'no'});res.flushHeaders();
