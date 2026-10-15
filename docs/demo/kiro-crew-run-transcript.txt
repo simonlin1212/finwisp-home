@@ -129,3 +129,15 @@ The blocker note says the design spec requires a specific signature: `businessMo
 
 Session terminated, killing shell... ...killed.
 
+
+=== Run 3a (12:52–12:54 SGT, dangerously_skip_permissions=true, non-git copy) ===
+12:54:35 ERROR kiro_crew.task_planner: Decomposition failed … Bedrock is throttling requests
+❌ Task failed (bank-aware-cards): Failed to decompose spec into tasks
+[wrapper] skip_permissions now: False at 12:54:40
+
+=== Run 3b (12:58–13:12 SGT, same setting, single retry) ===
+Plan: 20 tasks (read spec → businessModel() → fixtures/tests → net_interest_share → make_card → orchestrator → test/typecheck/build → KIRO_LOG)
+security_events (this run): edit auto_approved ×7 by Crew; downstream rejected ×22, reason "headless_no_authorization"
+e.g. task6 "Creating facts-bank.json" → rejected (headless_no_authorization)
+Credits (sum of credits= in usage rows): ~12.74; files changed in copy: 0
+Stopped 13:12; agent.dangerously_skip_permissions → False (13:12:46 manual, trap confirmed 13:12:52)
