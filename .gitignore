@@ -11,3 +11,5 @@ data/profiles/
 # macOS metadata
 ._*
 .DS_Store
+
+dist-worker/

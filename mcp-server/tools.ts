@@ -1,8 +1,8 @@
-import { McpServer } from '@modelcontextprotocol/server';
+import { type ServerOptions, McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { annualFinancials } from './financials.js';
 import { educationHandlers, educationSchemas } from './education.js';
-import { memoryHandlers, memorySchemas } from './memory.js';
+import { memoryHandlers, memorySchemas, profileHandlers, type ProfileStore } from './memory.js';
 import { conceptSchema, explainConcept, INSTRUCTIONS } from './policy.js';
 import { SecEdgar } from './sources/sec-edgar.js';
 export const NOTE = 'Educational use only, not investment advice.';
@@ -14,9 +14,9 @@ export const schemas = {
   get_filings: z.object({ ticker_or_cik: identifier, form: z.string().min(1).optional(), limit: z.number().int().min(1).max(20).default(10) }),
   get_financials: z.object({ ticker_or_cik: identifier, metrics: z.array(identifier).min(1).max(30).default(DEFAULT_METRICS), years: z.number().int().min(1).max(10).default(5) }),
 };
-export function handlers(sec: SecEdgar) {
+export function handlers(sec: SecEdgar, profiles?: ProfileStore) {
   return {
-    ...educationHandlers, ...memoryHandlers, explain_concept: explainConcept,
+    ...educationHandlers, ...(profiles ? profileHandlers(profiles) : memoryHandlers), explain_concept: explainConcept,
     lookup_company: async (args: unknown) => { const { query } = schemas.lookup_company.parse(args); return { companies: await sec.lookup(query), source: 'https://www.sec.gov/files/company_tickers.json', note: NOTE }; },
     get_filings: async (args: unknown) => {
       const { ticker_or_cik, form, limit } = schemas.get_filings.parse(args);
@@ -28,15 +28,15 @@ export function handlers(sec: SecEdgar) {
     },
     get_financials: async (args: unknown) => {
       const { ticker_or_cik, metrics, years } = schemas.get_financials.parse(args);
-      const cik = await sec.resolve(ticker_or_cik), data = await sec.companyfacts(cik);
+      const cik = await sec.resolve(ticker_or_cik), data = await sec.financialFacts(cik, metrics);
       const financials = annualFinancials(data, metrics, years);
       return { cik, financials, source: `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, note: NOTE };
     },
   };
 }
-export function createMcpServer(sec: SecEdgar) {
-  const server = new McpServer({ name: 'finwisp-home', version: '0.1.0' }, { instructions: INSTRUCTIONS });
-  for (const [name, handler] of Object.entries(handlers(sec))) {
+export function createMcpServer(sec: SecEdgar, options: ServerOptions = {}, profiles?: ProfileStore) {
+  const server = new McpServer({ name: 'finwisp-home', version: '0.1.0' }, { instructions: INSTRUCTIONS, ...options });
+  for (const [name, handler] of Object.entries(handlers(sec, profiles))) {
     server.registerTool(name, { description: `${name}: SEC EDGAR company research. ${NOTE}`, annotations: { readOnlyHint: !['make_quiz','grade_quiz','update_learning_profile'].includes(name) }, inputSchema: schemas[name as keyof typeof schemas] }, async (args: any) => {
       try { const result = await handler(args); return { content: [{ type: 'text' as const, text: JSON.stringify(result) }], structuredContent: result }; }
       catch (error) { const result = { error: error instanceof Error ? error.message : String(error), source: 'SEC EDGAR', note: NOTE }; return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify(result) }], structuredContent: result }; }

@@ -1,7 +1,4 @@
 import { z } from 'zod';
-import { readFile, mkdir, rename, writeFile, stat, unlink } from 'node:fs/promises';
-import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
 export const profileId = z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/).default('family');
 const label = z.string().trim().min(1).max(100);
 export const eventSchema = z.discriminatedUnion('type', [
@@ -14,14 +11,18 @@ const stored = z.object({conceptsLearned:z.record(z.string(),z.object({count:z.n
 export type Profile = z.infer<typeof stored>;
 export class ProfileStore {
  private queue: Promise<unknown> = Promise.resolve();
- constructor(private directory = process.env.PROFILE_DIR ?? 'data/profiles') {}
+ private storage?: Promise<ProfileStorage>;
+ private directory: string;
+ private getStorage() { return this.storage ??= import('#file-storage').then(m => new m.FileProfileStorage(this.directory)); }
+ constructor(directory = process.env.PROFILE_DIR ?? 'data/profiles', storage?: ProfileStorage) { this.directory = directory; this.storage = storage ? Promise.resolve(storage) : undefined; }
  async get(id='family'): Promise<Profile> {
-  const file=join(this.directory,`${profileId.parse(id)}.json`);
-  try { if((await stat(file)).size>65536) throw new Error('Profile exceeds size cap'); return stored.parse(JSON.parse(await readFile(file,'utf8'))); }
-  catch(e:any) { if(e.code==='ENOENT') return {conceptsLearned:{},quizHistory:[],companiesFollowed:[],lastSession:''}; throw e; }
+  const body = await (await this.getStorage()).get(profileId.parse(id));
+  if (body === undefined) return {conceptsLearned:{},quizHistory:[],companiesFollowed:[],lastSession:''};
+  if(new TextEncoder().encode(body).length>65536) throw new Error('Profile exceeds size cap');
+  return stored.parse(JSON.parse(body));
  }
  reset(id='family'): Promise<Profile> {
-  id=profileId.parse(id);const work=this.queue.then(async()=>{await unlink(join(this.directory,`${id}.json`)).catch(e=>{if(e.code!=='ENOENT')throw e;});return this.get(id);});this.queue=work.catch(()=>{});return work;
+  id=profileId.parse(id);const work=this.queue.then(async()=>{await (await this.getStorage()).delete(id);return this.get(id);});this.queue=work.catch(()=>{});return work;
  }
  update(id: string, input: unknown): Promise<Profile> {
   id=profileId.parse(id); const event=eventSchema.parse(input);
@@ -31,13 +32,20 @@ export class ProfileStore {
    if(event.type==='quiz') p.quizHistory=[...p.quizHistory,{score:event.score,missedConcepts:event.missedConcepts,at}].slice(-100);
    if(event.type==='company') p.companiesFollowed=[...new Set([...p.companiesFollowed,event.company])].slice(-100);
    if(event.type==='session') p.lastSession=event.summary;
-   const body=JSON.stringify(stored.parse(p)); if(Buffer.byteLength(body)>65536) throw new Error('Profile exceeds size cap');
-   await mkdir(this.directory,{recursive:true}); const temp=join(this.directory,`.${id}-${randomUUID()}.tmp`);
-   try { await writeFile(temp,body,{mode:0o600,flag:'wx'}); await rename(temp,join(this.directory,`${id}.json`)); } finally {await unlink(temp).catch(()=>{});}
+   const body=JSON.stringify(stored.parse(p)); if(new TextEncoder().encode(body).length>65536) throw new Error('Profile exceeds size cap');
+   await (await this.getStorage()).set(id,body);
    return p;
   }); this.queue=work.catch(()=>{}); return work;
  }
 }
+export interface ProfileStorage { get(id:string):Promise<string|undefined>; set(id:string,body:string):Promise<void>; delete(id:string):Promise<void> }
+export class MemoryProfileStorage implements ProfileStorage {
+ private data = new Map<string,string>();
+ async get(id:string) { return this.data.get(id); }
+ async set(id:string,body:string) { if (!this.data.has(id) && this.data.size >= 200) this.data.delete(this.data.keys().next().value!); this.data.set(id,body); }
+ async delete(id:string) { this.data.delete(id); }
+}
 export const profiles=new ProfileStore();
 export const memorySchemas={get_learning_profile:z.object({profile_id:profileId}),update_learning_profile:z.object({profile_id:profileId,event:eventSchema})};
-export const memoryHandlers={get_learning_profile:async(args:unknown)=>{const a=memorySchemas.get_learning_profile.parse(args);return {profile:await profiles.get(a.profile_id)};},update_learning_profile:async(args:unknown)=>{const a=memorySchemas.update_learning_profile.parse(args);return {profile:await profiles.update(a.profile_id,a.event)};}};
+export function profileHandlers(profiles: ProfileStore) { return {get_learning_profile:async(args:unknown)=>{const a=memorySchemas.get_learning_profile.parse(args);return {profile:await profiles.get(a.profile_id)};},update_learning_profile:async(args:unknown)=>{const a=memorySchemas.update_learning_profile.parse(args);return {profile:await profiles.update(a.profile_id,a.event)};}}; }
+export const memoryHandlers=profileHandlers(profiles);

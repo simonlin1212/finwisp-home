@@ -1,0 +1,16 @@
+name = "finwisp-home-mcp"
+main = "worker/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+SEC_APP_NAME = "FinwispHome/0.1"
+
+[[ratelimits]]
+name = "MCP_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }
+
+[build]
+command = "npm run worker:build"

@@ -16,6 +16,7 @@
     "scripts/**/*.ts",
     "tests/**/*.ts",
     "orchestrator/**/*.ts",
-    "host/**/*.ts"
+    "host/**/*.ts",
+    "worker/**/*.ts"
   ]
 }
