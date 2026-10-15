@@ -1,0 +1,39 @@
+# Codex CLI codex-cli 0.162.1 as external MCP client of the public endpoint (2026-10-15 ~14:00 SGT)
+# command: FINWISP_MCP_URL=https://finwisp-home-mcp.linsizhen.workers.dev/mcp bash scripts/codex-mcp-demo.sh
+Reading additional input from stdin...
+OpenAI Codex v0.162.1
+--------
+workdir: /tmp/tmp.G2TWKsaEXD
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: none
+reasoning summaries: none
+session id: 01a13e18-7d2e-7202-bebf-f1763510a9dd
+--------
+user
+Use only the finwisp MCP tools, no shell commands. 1) lookup_company with query 'Costco'. 2) get_financials for that CIK with years 3. 3) compute_metrics with those financials. 4) make_card with type 'trend', metric 'net_margin', the computed results and company 'Costco (COST)'. Then reply in at most 6 lines: the eyebrow, title, the card body, and the SEC accession numbers. Educational use only.
+codex
+I’ll use the Finwisp tools to look up Costco, calculate its three-year metrics, and create the net-margin trend card.
+mcp: finwisp/lookup_company started
+mcp: finwisp/lookup_company (completed)
+mcp: finwisp/get_financials started
+mcp: finwisp/get_financials (completed)
+mcp: finwisp/compute_metrics started
+mcp: finwisp/compute_metrics (completed)
+mcp: finwisp/make_card started
+mcp: finwisp/make_card (completed)
+codex
+PROFITABILITY · MULTI-YEAR TREND
+**Net Margin**
+In FY2026 Costco (COST) kept 3.0% of revenue as net income ($9.2B of $303.2B). In FY2025 Costco (COST) kept 2.9% of revenue as net income ($8.1B of $275.2B). In FY2024 Costco (COST) kept 2.9% of revenue as net income ($7.4B of $254.5B).
+SEC accession (all card sources): 0000909832-26-000093.
+Educational use only, not investment advice.
+tokens used
+21,620
+PROFITABILITY · MULTI-YEAR TREND
+**Net Margin**
+In FY2026 Costco (COST) kept 3.0% of revenue as net income ($9.2B of $303.2B). In FY2025 Costco (COST) kept 2.9% of revenue as net income ($8.1B of $275.2B). In FY2024 Costco (COST) kept 2.9% of revenue as net income ($7.4B of $254.5B).
+SEC accession (all card sources): 0000909832-26-000093.
+Educational use only, not investment advice.

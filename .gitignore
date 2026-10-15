@@ -13,3 +13,4 @@ data/profiles/
 .DS_Store
 
 dist-worker/
+submission/

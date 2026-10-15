@@ -12,7 +12,7 @@ interface Context { waitUntil(promise:Promise<unknown>):void }
 export function createWorker(deps:{fetch?:typeof fetch; sec?:SecEdgar; cache?:WorkerCache; sleep?:(ms:number)=>Promise<void>}={}) {
  let sec=deps.sec;
  let secUserAgent:string|undefined;
- const profiles=new ProfileStore('',new MemoryProfileStorage());
+ const profileStorage=new MemoryProfileStorage();
  const error=(status:number,message:string)=>Response.json({jsonrpc:'2.0',id:null,error:{code:-32000,message}},{status});
  const handle=async (request:Request, env:Env={}, _ctx?:Context):Promise<Response> => {
   const path=new URL(request.url).pathname;
@@ -39,6 +39,14 @@ export function createWorker(deps:{fetch?:typeof fetch; sec?:SecEdgar; cache?:Wo
     fetch:((input,init)=> { if(!contact)throw new Error('SEC_CONTACT_EMAIL is required before calling SEC'); return (deps.fetch??fetch)(input,init); }) as typeof fetch});
    secUserAgent=userAgent;
   }
+  // Partition the single bounded map without retaining raw caller IPs.
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(request.headers.get('CF-Connecting-IP')??'unknown'));
+  const prefix=Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('').slice(0,16)+':';
+  const profiles=new ProfileStore('',{
+   get:id=>profileStorage.get(prefix+id),
+   set:(id,body)=>profileStorage.set(prefix+id,body),
+   delete:id=>profileStorage.delete(prefix+id),
+  });
   const server=createMcpServer(sec!,{jsonSchemaValidator:new CfWorkerJsonSchemaValidator()},profiles);
   const transport=new WebStandardStreamableHTTPServerTransport({sessionIdGenerator:undefined,enableJsonResponse:true});
   try {

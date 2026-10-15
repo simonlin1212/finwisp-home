@@ -4,6 +4,29 @@ An English home learning screen that teaches how to read companies with SEC fili
 
 `Home Hub / CLI → rule-based orchestrator → official MCP client → Streamable HTTP /mcp → SEC EDGAR + education + memory`
 
+## Public MCP endpoint (for judges)
+
+**`https://finwisp-home-mcp.linsizhen.workers.dev/mcp`** — Streamable HTTP (MCP spec 2025-11-25), stateless JSON mode, no auth, hosted on Cloudflare Workers (free plan). `GET https://finwisp-home-mcp.linsizhen.workers.dev/health` returns a discovery JSON.
+
+Connect any MCP client that speaks Streamable HTTP:
+
+```toml
+# Codex CLI (~/.codex/config.toml) — verified 2026-10-15, see docs/demo/public-codex-transcript.txt
+[mcp_servers.finwisp]
+url = "https://finwisp-home-mcp.linsizhen.workers.dev/mcp"
+default_tools_approval_mode = "approve"
+```
+
+```bash
+# Claude Code (standard remote-HTTP syntax; not tested by us)
+claude mcp add --transport http finwisp https://finwisp-home-mcp.linsizhen.workers.dev/mcp
+
+# SDK check script in this repo (verified): initialize, tools/list, WFC financials -> metrics -> card
+npm run remote-check -- https://finwisp-home-mcp.linsizhen.workers.dev/mcp
+```
+
+Public-endpoint limits: 60 requests/min per IP, 256 KiB request bodies, at most 20 SEC concepts per `get_financials` call, SEC calls cached (6–24 h) and paced ≤ ~4.8 req/s per Worker isolate. Quiz state and learning profiles on the public endpoint are ephemeral, per-isolate memory; profiles are also partitioned per caller using a hashed IP. Deployment details: [docs/DEPLOY.md](docs/DEPLOY.md). Educational use only, not investment advice.
+
 ## Run the Home Hub
 
 ```sh

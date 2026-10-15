@@ -1,0 +1,845 @@
+# Live check against the public endpoint (2026-10-15 14:06 SGT)
+# command: npm run remote-check -- https://finwisp-home-mcp.linsizhen.workers.dev/mcp
+Server: { name: 'finwisp-home', version: '0.1.0' }
+Protocol: 2025-11-25
+Tools: compute_metrics, make_card, make_quiz, grade_quiz, get_learning_profile, update_learning_profile, explain_concept, lookup_company, get_filings, get_financials
+lookup_company: {
+  "companies": [
+    {
+      "cik": "0000072971",
+      "ticker": "WFC",
+      "title": "WELLS FARGO & COMPANY/MN",
+      "name": "Wells Fargo"
+    },
+    {
+      "cik": "0000072971",
+      "ticker": "WFC-PY",
+      "title": "WELLS FARGO & COMPANY/MN",
+      "name": "Wells Fargo"
+    },
+    {
+      "cik": "0000072971",
+      "ticker": "WFC-PL",
+      "title": "WELLS FARGO & COMPANY/MN",
+      "name": "Wells Fargo"
+    },
+    {
+      "cik": "0000072971",
+      "ticker": "WFC-PC",
+      "title": "WELLS FARGO & COMPANY/MN",
+      "name": "Wells Fargo"
+    },
+    {
+      "cik": "0000072971",
+      "ticker": "WFC-PZ",
+      "title": "WELLS FARGO & COMPANY/MN",
+      "name": "Wells Fargo"
+    }
+  ],
+  "source": "https://www.sec.gov/files/company_tickers.json",
+  "note": "Educational use only, not investment advice."
+}
+get_financials: {
+  "cik": "0000072971",
+  "financials": [
+    {
+      "metric": "Revenue",
+      "concepts": [
+        "Revenues",
+        "RevenueFromContractWithCustomerExcludingAssessedTax",
+        "SalesRevenueNet",
+        "RevenueFromContractWithCustomerIncludingAssessedTax",
+        "RevenuesNetOfInterestExpense"
+      ],
+      "values": [
+        {
+          "fiscalYear": 2025,
+          "value": 83699000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 82296000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "NetIncomeLoss",
+      "concepts": [
+        "NetIncomeLoss",
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "ProfitLoss"
+      ],
+      "values": [
+        {
+          "fiscalYear": 2025,
+          "value": 21338000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 19722000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 19142000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        }
+      ]
+    },
+    {
+      "metric": "GrossProfit",
+      "concepts": [
+        "GrossProfit"
+      ],
+      "values": []
+    },
+    {
+      "metric": "Assets",
+      "concepts": [
+        "Assets"
+      ],
+      "values": [
+        {
+          "fiscalYear": 2025,
+          "value": 2148631000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Assets"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 1929845000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Assets"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 1932468000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "filed": "2025-02-25",
+          "accessionNumber": "0000072971-25-000066",
+          "concept": "Assets"
+        }
+      ]
+    },
+    {
+      "metric": "Liabilities",
+      "concepts": [
+        "Liabilities"
+      ],
+      "values": [
+        {
+          "fiscalYear": 2025,
+          "value": 1965593000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Liabilities"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 1748779000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Liabilities"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 1745025000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "filed": "2025-02-25",
+          "accessionNumber": "0000072971-25-000066",
+          "concept": "Liabilities"
+        }
+      ]
+    },
+    {
+      "metric": "OperatingIncomeLoss",
+      "concepts": [
+        "OperatingIncomeLoss"
+      ],
+      "values": []
+    },
+    {
+      "metric": "CostOfRevenue",
+      "concepts": [
+        "CostOfRevenue",
+        "CostOfGoodsAndServicesSold"
+      ],
+      "values": []
+    },
+    {
+      "metric": "NetCashProvidedByUsedInOperatingActivities",
+      "concepts": [
+        "NetCashProvidedByUsedInOperatingActivities"
+      ],
+      "values": [
+        {
+          "fiscalYear": 2025,
+          "value": -19001000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetCashProvidedByUsedInOperatingActivities"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 3035000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetCashProvidedByUsedInOperatingActivities"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 40358000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetCashProvidedByUsedInOperatingActivities"
+        }
+      ]
+    },
+    {
+      "metric": "NetInterestIncome",
+      "concepts": [
+        "InterestIncomeExpenseNet",
+        "InterestIncomeExpenseAfterProvisionForLoanLoss"
+      ],
+      "values": [
+        {
+          "fiscalYear": 2025,
+          "value": 47484000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "InterestIncomeExpenseNet"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 47676000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "InterestIncomeExpenseNet"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 52375000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "filed": "2026-02-24",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "InterestIncomeExpenseNet"
+        }
+      ]
+    }
+  ],
+  "source": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000072971.json",
+  "note": "Educational use only, not investment advice."
+}
+compute_metrics: {
+  "computed": [
+    {
+      "metric": "gross_margin",
+      "fiscalYear": 2025,
+      "value": null,
+      "reason": "Missing, mismatched period, zero denominator, or invalid growth base.",
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": 83699000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "net_margin",
+      "fiscalYear": 2025,
+      "value": 0.2549373349741335,
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": 21338000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        },
+        {
+          "fiscalYear": 2025,
+          "value": 83699000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "operating_margin",
+      "fiscalYear": 2025,
+      "value": null,
+      "reason": "Missing, mismatched period, zero denominator, or invalid growth base.",
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": 83699000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "liabilities_to_assets",
+      "fiscalYear": 2025,
+      "value": 0.9148118034227376,
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": 1965593000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Liabilities"
+        },
+        {
+          "fiscalYear": 2025,
+          "value": 2148631000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Assets"
+        }
+      ]
+    },
+    {
+      "metric": "operating_cash_conversion",
+      "fiscalYear": 2025,
+      "value": -0.8904770831380635,
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": -19001000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetCashProvidedByUsedInOperatingActivities"
+        },
+        {
+          "fiscalYear": 2025,
+          "value": 21338000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        }
+      ]
+    },
+    {
+      "metric": "revenue_growth_yoy",
+      "fiscalYear": 2025,
+      "value": 0.01704821619519792,
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": 83699000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 82296000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "net_interest_share",
+      "fiscalYear": 2025,
+      "value": 0.5673186059570604,
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": 47484000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "InterestIncomeExpenseNet"
+        },
+        {
+          "fiscalYear": 2025,
+          "value": 83699000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "gross_margin",
+      "fiscalYear": 2024,
+      "value": null,
+      "reason": "Missing, mismatched period, zero denominator, or invalid growth base.",
+      "sources": [
+        {
+          "fiscalYear": 2024,
+          "value": 82296000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "net_margin",
+      "fiscalYear": 2024,
+      "value": 0.23964712744240305,
+      "sources": [
+        {
+          "fiscalYear": 2024,
+          "value": 19722000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 82296000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "operating_margin",
+      "fiscalYear": 2024,
+      "value": null,
+      "reason": "Missing, mismatched period, zero denominator, or invalid growth base.",
+      "sources": [
+        {
+          "fiscalYear": 2024,
+          "value": 82296000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "liabilities_to_assets",
+      "fiscalYear": 2024,
+      "value": 0.9061758845917677,
+      "sources": [
+        {
+          "fiscalYear": 2024,
+          "value": 1748779000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Liabilities"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 1929845000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "Assets"
+        }
+      ]
+    },
+    {
+      "metric": "operating_cash_conversion",
+      "fiscalYear": 2024,
+      "value": 0.1538890579048778,
+      "sources": [
+        {
+          "fiscalYear": 2024,
+          "value": 3035000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetCashProvidedByUsedInOperatingActivities"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 19722000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        }
+      ]
+    },
+    {
+      "metric": "revenue_growth_yoy",
+      "fiscalYear": 2024,
+      "value": -0.0036442001525479606,
+      "sources": [
+        {
+          "fiscalYear": 2024,
+          "value": 82296000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "net_interest_share",
+      "fiscalYear": 2024,
+      "value": 0.5793234179060951,
+      "sources": [
+        {
+          "fiscalYear": 2024,
+          "value": 47676000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "InterestIncomeExpenseNet"
+        },
+        {
+          "fiscalYear": 2024,
+          "value": 82296000000,
+          "unit": "USD",
+          "end": "2024-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "gross_margin",
+      "fiscalYear": 2023,
+      "value": null,
+      "reason": "Missing, mismatched period, zero denominator, or invalid growth base.",
+      "sources": [
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "net_margin",
+      "fiscalYear": 2023,
+      "value": 0.2317517585384457,
+      "sources": [
+        {
+          "fiscalYear": 2023,
+          "value": 19142000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "operating_margin",
+      "fiscalYear": 2023,
+      "value": null,
+      "reason": "Missing, mismatched period, zero denominator, or invalid growth base.",
+      "sources": [
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "liabilities_to_assets",
+      "fiscalYear": 2023,
+      "value": 0.9030033097572637,
+      "sources": [
+        {
+          "fiscalYear": 2023,
+          "value": 1745025000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-25-000066",
+          "concept": "Liabilities"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 1932468000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-25-000066",
+          "concept": "Assets"
+        }
+      ]
+    },
+    {
+      "metric": "operating_cash_conversion",
+      "fiscalYear": 2023,
+      "value": 2.108348134991119,
+      "sources": [
+        {
+          "fiscalYear": 2023,
+          "value": 40358000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetCashProvidedByUsedInOperatingActivities"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 19142000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "NetIncomeLoss"
+        }
+      ]
+    },
+    {
+      "metric": "revenue_growth_yoy",
+      "fiscalYear": 2023,
+      "value": null,
+      "reason": "Missing, mismatched period, zero denominator, or invalid growth base.",
+      "sources": [
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "net_interest_share",
+      "fiscalYear": 2023,
+      "value": 0.6341029335205879,
+      "sources": [
+        {
+          "fiscalYear": 2023,
+          "value": 52375000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "InterestIncomeExpenseNet"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    },
+    {
+      "metric": "cagr",
+      "fiscalYear": 2025,
+      "value": 0.006648840922489185,
+      "sources": [
+        {
+          "fiscalYear": 2025,
+          "value": 83699000000,
+          "unit": "USD",
+          "end": "2025-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        },
+        {
+          "fiscalYear": 2023,
+          "value": 82597000000,
+          "unit": "USD",
+          "end": "2023-12-31",
+          "accessionNumber": "0000072971-26-000133",
+          "concept": "RevenuesNetOfInterestExpense"
+        }
+      ]
+    }
+  ],
+  "businessModel": "bank",
+  "glossary": {
+    "gross_margin": "The share of revenue left after the direct cost of goods or services.",
+    "net_margin": "The share of revenue left as profit after all expenses.",
+    "operating_margin": "The share of revenue left after the costs of running the business, before interest and taxes.",
+    "revenue_growth_yoy": "How much revenue changed compared with the previous fiscal year.",
+    "cagr": "The steady yearly growth rate that would connect the first and last values.",
+    "liabilities_to_assets": "What the company owes divided by what it owns. This is not the same as debt alone.",
+    "operating_cash_conversion": "Cash from normal business activities divided by net profit. Profit and cash can differ.",
+    "net_interest_share": "The share of a bank’s revenue that comes from interest it earns on loans minus the interest it pays on deposits."
+  },
+  "note": "Educational use only, not investment advice."
+}
+make_card: {
+  "card": {
+    "type": "metric",
+    "eyebrow": "PROFITABILITY · FROM THE 10-K",
+    "title": "Net Margin",
+    "body": "In FY2025 Wells Fargo kept 25.5% of revenue as net income ($21.3B of $83.7B). In FY2024 Wells Fargo kept 24.0% of revenue as net income ($19.7B of $82.3B). In FY2023 Wells Fargo kept 23.2% of revenue as net income ($19.1B of $82.6B).",
+    "figures": [
+      {
+        "metric": "net_margin",
+        "fiscalYear": 2025,
+        "value": 0.2549373349741335
+      },
+      {
+        "metric": "net_margin",
+        "fiscalYear": 2024,
+        "value": 0.23964712744240305
+      },
+      {
+        "metric": "net_margin",
+        "fiscalYear": 2023,
+        "value": 0.2317517585384457
+      }
+    ],
+    "sources": [
+      {
+        "fiscalYear": 2025,
+        "value": 21338000000,
+        "unit": "USD",
+        "end": "2025-12-31",
+        "accessionNumber": "0000072971-26-000133",
+        "concept": "NetIncomeLoss",
+        "label": "Net income"
+      },
+      {
+        "fiscalYear": 2025,
+        "value": 83699000000,
+        "unit": "USD",
+        "end": "2025-12-31",
+        "accessionNumber": "0000072971-26-000133",
+        "concept": "RevenuesNetOfInterestExpense",
+        "label": "Revenue (net of interest expense)"
+      },
+      {
+        "fiscalYear": 2024,
+        "value": 19722000000,
+        "unit": "USD",
+        "end": "2024-12-31",
+        "accessionNumber": "0000072971-26-000133",
+        "concept": "NetIncomeLoss",
+        "label": "Net income"
+      },
+      {
+        "fiscalYear": 2024,
+        "value": 82296000000,
+        "unit": "USD",
+        "end": "2024-12-31",
+        "accessionNumber": "0000072971-26-000133",
+        "concept": "RevenuesNetOfInterestExpense",
+        "label": "Revenue (net of interest expense)"
+      },
+      {
+        "fiscalYear": 2023,
+        "value": 19142000000,
+        "unit": "USD",
+        "end": "2023-12-31",
+        "accessionNumber": "0000072971-26-000133",
+        "concept": "NetIncomeLoss",
+        "label": "Net income"
+      },
+      {
+        "fiscalYear": 2023,
+        "value": 82597000000,
+        "unit": "USD",
+        "end": "2023-12-31",
+        "accessionNumber": "0000072971-26-000133",
+        "concept": "RevenuesNetOfInterestExpense",
+        "label": "Revenue (net of interest expense)"
+      }
+    ]
+  },
+  "text": "Net Margin: In FY2025 Wells Fargo kept 25.5% of revenue as net income ($21.3B of $83.7B). In FY2024 Wells Fargo kept 24.0% of revenue as net income ($19.7B of $82.3B). In FY2023 Wells Fargo kept 23.2% of revenue as net income ($19.1B of $82.6B).",
+  "note": "Educational use only, not investment advice."
+}
+Card: {"card":{"type":"metric","eyebrow":"PROFITABILITY · FROM THE 10-K","title":"Net Margin","body":"In FY2025 Wells Fargo kept 25.5% of revenue as net income ($21.3B of $83.7B). In FY2024 Wells Fargo kept 24.0% of revenue as net income ($19.7B of $82.3B). In FY2023 Wells Fargo kept 23.2% of revenue as net income ($19.1B of $82.6B).","figures":[{"metric":"net_margin","fiscalYear":2025,"value":0.2549373349741335},{"metric":"net_margin","fiscalYear":2024,"value":0.23964712744240305},{"metric":"net_margin","fiscalYear":2023,"value":0.2317517585384457}],"sources":[{"fiscalYear":2025,"value":21338000000,"unit":"USD","end":"2025-12-31","accessionNumber":"0000072971-26-000133","concept":"NetIncomeLoss","label":"Net income"},{"fiscalYear":2025,"value":83699000000,"unit":"USD","end":"2025-12-31","accessionNumber":"0000072971-26-000133","concept":"RevenuesNetOfInterestExpense","label":"Revenue (net of interest expense)"},{"fiscalYear":2024,"value":19722000000,"unit":"USD","end":"2024-12-31","accessionNumber":"0000072971-26-000133","concept":"NetIncomeLoss","label":"Net income"},{"fiscalYear":2024,"value":82296000000,"unit":"USD","end":"2024-12-31","accessionNumber":"0000072971-26-000133","concept":"RevenuesNetOfInterestExpense","label":"Revenue (net of interest expense)"},{"fiscalYear":2023,"value":19142000000,"unit":"USD","end":"2023-12-31","accessionNumber":"0000072971-26-000133","concept":"NetIncomeLoss","label":"Net income"},{"fiscalYear":2023,"value":82597000000,"unit":"USD","end":"2023-12-31","accessionNumber":"0000072971-26-000133","concept":"RevenuesNetOfInterestExpense","label":"Revenue (net of interest expense)"}]},"text":"Net Margin: In FY2025 Wells Fargo kept 25.5% of revenue as net income ($21.3B of $83.7B). In FY2024 Wells Fargo kept 24.0% of revenue as net income ($19.7B of $82.3B). In FY2023 Wells Fargo kept 23.2% of revenue as net income ($19.1B of $82.6B).","note":"Educational use only, not investment advice."}
+SEC accession numbers: 0000072971-26-000133, 0000072971-25-000066

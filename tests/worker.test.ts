@@ -20,8 +20,8 @@ function fixture() {
  }) as typeof fetch});
  return {worker,urls};
 }
-async function rpc(worker:ReturnType<typeof createWorker>,method:string,params:unknown={},e:Env=env) {
- const response=await worker.fetch(new Request('https://example.com/mcp',{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})}),e);
+async function rpc(worker:ReturnType<typeof createWorker>,method:string,params:unknown={},e:Env=env,ip?:string) {
+ const response=await worker.fetch(new Request('https://example.com/mcp',{method:'POST',headers:{...headers,...(ip?{'CF-Connecting-IP':ip}:{})},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})}),e);
  assert.equal(response.headers.get('Cache-Control'),'no-store');
  assert.equal(response.status,200,await response.clone().text()); return (await response.json()) as any;
 }
@@ -88,4 +88,17 @@ test('Worker refreshes SEC client when environment user agent changes', async ()
   assert.equal(result.result.isError,undefined);
  }
  assert.deepEqual(agents,['FinwispHome/0.1 first@example.com','FinwispHome/0.1 second@example.com']);
+});
+
+test('Worker profiles are isolated by caller IP within the shared isolate',async()=>{
+ const {worker}=fixture();
+ const call=(ip:string,name:string,event?:unknown)=>rpc(worker,'tools/call',{name,arguments:{profile_id:'shared-id',...(event?{event}:{})}},env,ip);
+ await call('192.0.2.1','update_learning_profile',{type:'session',summary:'Private caller one summary'});
+ const first=await call('192.0.2.1','get_learning_profile');
+ assert.equal(first.result.structuredContent.profile.lastSession,'Private caller one summary');
+ const second=await call('192.0.2.2','get_learning_profile');
+ assert.equal(second.result.structuredContent.profile.lastSession,'');
+ await call('192.0.2.2','update_learning_profile',{type:'session',summary:'Private caller two summary'});
+ assert.equal((await call('192.0.2.1','get_learning_profile')).result.structuredContent.profile.lastSession,'Private caller one summary');
+ assert.equal((await call('192.0.2.2','get_learning_profile')).result.structuredContent.profile.lastSession,'Private caller two summary');
 });
