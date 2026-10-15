@@ -22,6 +22,7 @@ function fixture() {
 }
 async function rpc(worker:ReturnType<typeof createWorker>,method:string,params:unknown={},e:Env=env) {
  const response=await worker.fetch(new Request('https://example.com/mcp',{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})}),e);
+ assert.equal(response.headers.get('Cache-Control'),'no-store');
  assert.equal(response.status,200,await response.clone().text()); return (await response.json()) as any;
 }
 test('concept subset matches committed full companyfacts fixture for default metrics',()=>{
@@ -39,6 +40,7 @@ test('Worker health, stateless initialize, list, and concept financials',async()
  const list=await rpc(worker,'tools/list');assert.ok(list.result.tools.some((t:any)=>t.name==='get_financials'));
  const result=await rpc(worker,'tools/call',{name:'get_financials',arguments:{ticker_or_cik:'COST'}});
  assert.equal(result.result.isError,undefined);
+ assert.equal(result.result.structuredContent.source,'https://data.sec.gov/api/xbrl/companyconcept/CIK0000909832/us-gaap/');
  assert.deepEqual(result.result.structuredContent.financials,annualFinancials(costcoFacts,DEFAULT_METRICS,5));
  const starts=urls.length; await rpc(worker,'tools/call',{name:'get_financials',arguments:{ticker_or_cik:'COST'}});assert.equal(urls.length,starts);
 });
@@ -48,7 +50,12 @@ test('Worker rejects oversized bodies, origins, rate limits and SSE GET',async()
  assert.equal((await worker.fetch(new Request('https://example.com/mcp',{method:'POST',headers:{Origin:'https://foreign.example'}}),env)).status,403);
  let key='';const limited=await worker.fetch(new Request('https://example.com/mcp',{method:'POST',headers:{'CF-Connecting-IP':'192.0.2.1'}}),{MCP_RATE_LIMITER:{limit:async options=>{key=options.key;return {success:false};}}});
  assert.equal(limited.status,429);assert.equal((await limited.json() as any).jsonrpc,'2.0');assert.equal(key,'192.0.2.1');
- assert.equal((await worker.fetch(new Request('https://example.com/mcp'),env)).status,405);
+ const get=await worker.fetch(new Request('https://example.com/mcp'),env);
+ assert.equal(get.status,405);assert.equal(get.headers.get('Allow'),'POST, DELETE, OPTIONS');
+ assert.equal(get.headers.get('Cache-Control'),'no-store');
+ assert.equal(limited.headers.get('Cache-Control'),'no-store');
+ const options=await worker.fetch(new Request('https://example.com/mcp',{method:'OPTIONS'}),env);
+ assert.equal(options.status,204);assert.equal(options.headers.get('Cache-Control'),'no-store');
 });
 test('missing SEC contact returns clear tool error without network',async()=>{
  let calls=0;const worker=createWorker({fetch:(async()=>{calls++;throw new Error('network forbidden');}) as typeof fetch});
@@ -68,4 +75,17 @@ test('Worker profile storage persists across fresh request servers',async()=>{
  await rpc(worker,'tools/call',{name:'update_learning_profile',arguments:{profile_id:'worker-test',event:{type:'concept',concept:'Revenue'}}});
  const result=await rpc(worker,'tools/call',{name:'get_learning_profile',arguments:{profile_id:'worker-test'}});
  assert.equal(result.result.structuredContent.profile.conceptsLearned.Revenue.count,1);
+});
+
+test('Worker refreshes SEC client when environment user agent changes', async () => {
+ const agents:string[]=[];
+ const worker=createWorker({cache:new WorkerCache(),sleep:async()=>{},fetch:(async (_input,init)=>{
+  agents.push(new Headers(init?.headers).get('User-Agent')!);
+  return Response.json({filings:{recent:{form:[],filingDate:[],accessionNumber:[],primaryDocument:[]}}});
+ }) as typeof fetch});
+ for(const [index,email] of ['first@example.com','second@example.com'].entries()) {
+  const result=await rpc(worker,'tools/call',{name:'get_filings',arguments:{ticker_or_cik:String(index+1)}},{SEC_CONTACT_EMAIL:email});
+  assert.equal(result.result.isError,undefined);
+ }
+ assert.deepEqual(agents,['FinwispHome/0.1 first@example.com','FinwispHome/0.1 second@example.com']);
 });

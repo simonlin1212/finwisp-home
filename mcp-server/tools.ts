@@ -30,7 +30,7 @@ export function handlers(sec: SecEdgar, profiles?: ProfileStore) {
       const { ticker_or_cik, metrics, years } = schemas.get_financials.parse(args);
       const cik = await sec.resolve(ticker_or_cik), data = await sec.financialFacts(cik, metrics);
       const financials = annualFinancials(data, metrics, years);
-      return { cik, financials, source: `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, note: NOTE };
+      return { cik, financials, source: sec.usesConceptApi ? `https://data.sec.gov/api/xbrl/companyconcept/CIK${cik}/us-gaap/` : `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`, note: NOTE };
     },
   };
 }

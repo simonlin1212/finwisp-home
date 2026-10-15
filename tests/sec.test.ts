@@ -4,7 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SecEdgar, padCik } from '../mcp-server/sources/sec-edgar.js';
-import { handlers, NOTE } from '../mcp-server/tools.js';
+import { handlers, NOTE, DEFAULT_METRICS } from '../mcp-server/tools.js';
 const tickers = { 0: { cik_str: 320193, ticker: 'AAPL', title: 'Apple Inc.' }, 1: { cik_str: 1, ticker: 'OTHER', title: 'Apple Other' } };
 const submissions = { filings: { recent: { form: ['10-Q', '10-K'], filingDate: ['2025-04-01', '2024-11-01'], accessionNumber: ['0000320193-25-000001', '0000320193-24-000123'], primaryDocument: ['q.htm', 'k.htm'] } } };
 const row = { fy: 2024, fp: 'FY', form: '10-K', start: '2023-10-01', end: '2024-09-30', val: 100, filed: '2024-11-01', accn: 'original' };
@@ -23,3 +23,29 @@ test('lookup_company ticker and name with education note', async t => { const f 
 test('get_filings filters, bounds and document URLs', async t => { const h = handlers((await fixture(t)).sec); const r = await h.get_filings({ ticker_or_cik: 'AAPL', form: '10-K', limit: 1 }); assert.equal(r.filings.length, 1); assert.equal(r.filings[0].primaryDocumentUrl, 'https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/k.htm'); await assert.rejects(h.get_filings({ ticker_or_cik: 'AAPL', limit: 21 })); });
 test('get_financials defaults, annual deduplication, units and accession', async t => { const h = handlers((await fixture(t)).sec); const r = await h.get_financials({ ticker_or_cik: '320193' }); assert.equal(r.financials.length, 9); assert.deepEqual(r.financials[0].values.map(v => [v.fiscalYear, v.value, v.unit, v.accessionNumber]), [[2024, 101, 'USD', 'latest']]); assert.equal(r.financials[3].values.length, 1); await assert.rejects(h.get_financials({ ticker_or_cik: 'AAPL', years: 11 })); });
 test('User-Agent validation', () => { assert.throws(() => new SecEdgar({ userAgent: 'invalid' })); });
+
+test('concept API caps distinct expanded concepts before any request', async () => {
+  const urls: string[] = [];
+  const sec = new SecEdgar({ conceptsOnly: true, userAgent: 'Test test@example.com',
+    cache: { get: async () => undefined, set: async () => {} }, sleep: async () => {},
+    fetch: (async input => { urls.push(String(input)); return new Response(null, { status: 404 }); }) as typeof fetch });
+  assert.equal(sec.usesConceptApi, true);
+  const metrics = Array.from({ length: 20 }, (_, i) => `CustomConcept${i}`);
+  await assert.rejects(sec.financialFacts('1', metrics), {
+    message: 'Too many metrics for the public endpoint: 21 SEC concepts requested, max 20'
+  });
+  assert.equal(urls.length, 0);
+  await sec.financialFacts('1', DEFAULT_METRICS);
+  assert.equal(urls.length, 17);
+  urls.length = 0;
+  await sec.financialFacts('1', [...metrics.slice(0, 19), ...metrics.slice(0, 19), 'Assets']);
+  assert.equal(urls.length, 20);
+});
+test('Node financials retain companyfacts source and allow large concept sets', async t => {
+  const { sec, urls } = await fixture(t);
+  assert.equal(sec.usesConceptApi, false);
+  const result = await handlers(sec).get_financials({ ticker_or_cik: '1' });
+  assert.equal(result.source, 'https://data.sec.gov/api/xbrl/companyfacts/CIK0000000001.json');
+  await sec.financialFacts('1', Array.from({ length: 21 }, (_, i) => `CustomConcept${i}`));
+  assert.ok(urls.every(url => url.includes('/companyfacts/')));
+});

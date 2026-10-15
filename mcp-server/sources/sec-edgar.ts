@@ -25,6 +25,7 @@ export class SecEdgar {
     this.now = options.now ?? Date.now;
     this.sleep = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
   }
+  get usesConceptApi(): boolean { return this.conceptsOnly; }
   async json(url: string, ttl: number): Promise<any> {
     // Serialize cache checks and request starts across all endpoints in this client.
     const task = this.queue.then(async () => {
@@ -47,8 +48,10 @@ export class SecEdgar {
   submissions(cik: string) { return this.json(`https://data.sec.gov/submissions/CIK${padCik(cik)}.json`, 6 * 3600000); }
   async financialFacts(cik: string, metrics: string[]) {
     if (!this.conceptsOnly) return this.companyfacts(cik);
+    const concepts = financialConcepts(metrics);
+    if (concepts.length > 20) throw new Error(`Too many metrics for the public endpoint: ${concepts.length} SEC concepts requested, max 20`);
     const facts: Record<string, any> = {};
-    for (const concept of financialConcepts(metrics)) {
+    for (const concept of concepts) {
       const value = await this.json(`https://data.sec.gov/api/xbrl/companyconcept/CIK${padCik(cik)}/us-gaap/${concept}.json`, 6 * 3600000);
       if (value) facts[concept] = value;
     }
