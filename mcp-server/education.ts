@@ -52,7 +52,7 @@ export const educationHandlers = {
       return `${prefix} had ${titleCase(metric).toLowerCase()} of ${formatPercent(f.value)}.`;
     };
     const sources = figures.flatMap(f=>f.sources.map(s=>({...s,label:conceptLabel(s.concept ?? '')})));
-    const card = { type, title: titleCase(metric), body: type === 'concept' ? glossary[metric] : figures.length ? figures.map(describe).join(' ') : `No annual 10-K figures for ${titleCase(metric).toLowerCase()} were available for ${company ?? 'this company'}.`,
+    const card = { type, eyebrow: cardEyebrow(type, metric), title: titleCase(metric), body: type === 'concept' ? glossary[metric] : figures.length ? figures.map(describe).join(' ') : `No annual 10-K figures for ${titleCase(metric).toLowerCase()} were available for ${company ?? 'this company'}.`,
       figures: figures.map(({sources,...f})=>f), sources,
       ...(type==='trend' ? { chart: { unit:'percent', series: figures.map(f=>({ year:f.fiscalYear, value:f.value })) } } : {}) };
 
@@ -132,6 +132,15 @@ export const CONCEPT_LABELS: Record<string,string> = {
  RevenuesNetOfInterestExpense:'Revenue (net of interest expense)', NetIncomeLossAvailableToCommonStockholdersBasic:'Net income to common shareholders',
  ProfitLoss:'Net income incl. noncontrolling interests', InterestIncomeExpenseNet:'Net interest income',
 };
+// Small label above each card title: which part of the business the card is about, and what kind of card it is.
+export const METRIC_GROUPS: Record<string,string> = {
+ gross_margin:'PROFITABILITY', net_margin:'PROFITABILITY', operating_margin:'PROFITABILITY',
+ revenue_growth_yoy:'GROWTH', cagr:'LONG-TERM GROWTH', liabilities_to_assets:'BALANCE SHEET', operating_cash_conversion:'CASH FLOW',
+};
+export function cardEyebrow(type:'metric'|'concept'|'trend', metric:string) {
+ const group = METRIC_GROUPS[metric] ?? 'FINANCIAL BASICS';
+ return type === 'concept' ? `KEY IDEA · ${group}` : type === 'trend' ? `${group} · MULTI-YEAR TREND` : `${group} · FROM THE 10-K`;
+}
 export const conceptLabel=(concept:string)=>CONCEPT_LABELS[concept] ?? 'Reported amount';
 // Compare rounded displayed values, using the larger magnitude for a symmetric relative gap.
 // `below` distractors go under the true value (the rest above) so its rank varies.

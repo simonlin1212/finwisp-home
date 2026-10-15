@@ -64,10 +64,10 @@ export async function askWith(call:ToolCaller,text:string,id='family',emit:(e:St
   try {
    const lookup=await call('lookup_company',{query:company});const match=lookup.companies[0];if(!match)throw Error('Company not found');
    const facts=await call('get_financials',{ticker_or_cik:match.cik,years:3});const {computed}=await call('compute_metrics',{financials:facts.financials});
-   const items=[{title:'Policy refusal',body:refusal.text}];
-   for(const [metric,title] of [['revenue_growth_yoy','1. How fast did revenue grow?'],['net_margin','2. How much revenue became profit?'],['liabilities_to_assets','3. How large are liabilities relative to assets?']]){const {card}=await call('make_card',{type:'metric',metric,computed,company:displayName(match.ticker,match.title)});items.push({...card,title});}
+   const items:any[]=[{eyebrow:'EDUCATION ONLY · NOT ADVICE',title:'Policy refusal',body:refusal.text}];
+   for(const [metric,title] of [['revenue_growth_yoy','1. How fast did revenue grow?'],['net_margin','2. How much revenue became profit?'],['liabilities_to_assets','3. How large are liabilities relative to assets?']]){const {card}=await call('make_card',{type:'metric',metric,computed,company:displayName(match.ticker,match.title)});items.push({...card,eyebrow:`CHECK IT YOURSELF · ${card.eyebrow.split(' · ')[0]}`,title});}
    return {...refusal,cards:{items},spoken_text:"I can't tell you whether to buy. Check these three filing questions yourself. Educational use only."};
-  }catch(e){return {...refusal,cards:{items:[{title:'Policy refusal',body:refusal.text},{title:'SEC data unavailable',body:'Try again when SEC data is available. '+String(e)}]}};}
+  }catch(e){return {...refusal,cards:{items:[{eyebrow:'EDUCATION ONLY · NOT ADVICE',title:'Policy refusal',body:refusal.text},{eyebrow:'DATA STATUS',title:'SEC data unavailable',body:'Try again when SEC data is available. '+String(e)}]}};}
  }
  if(/[\u3400-\u9fff]/.test(text)) return {mode:'education',text:'Finwisp Home understands English questions for now. Try “Teach me about Costco net margin.”'};
  const intent=parseIntent(text);

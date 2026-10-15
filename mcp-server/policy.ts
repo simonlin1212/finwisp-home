@@ -7,7 +7,7 @@ export const DISCLAIMER='Educational use only, not investment advice.';
 // stock, valuation and prediction phrasings. Learning about investing is not a trade (LESSON).
 const TRADE="(buy|buying|sell|selling|hold(?!\\s+(?:on|up|off\\s+(?:on\\s+)?(?:the|this|that)\\s+(?:quiz|lesson|game|test))\\b)|holding|invest|investing|(?<!\\b(?:a|an|the|too|very|so|in|i'm|im|am|are|is|was|were|we're|they're|running|run|ran|bit|little)\\s)short(?!\\s+(?:(?:on|of)\\s+(?:time|cash|money|sleep|staff)|time|answer|version|summary|list|term|story|run)\\b)|shorting|trim|dump|own(?!\\s+(?:(?:a|an|the|my|our|their|its|his|her)\\s+)?(?:\\w+\\s+){0,2}(?:business|businesses|company|companies|shop|shops|store|stores|cafe|restaurant|bakery|bar|salon|farm|ranch|stand|startup|franchise|firm|practice|studio|gym|clinic|home|homes|house|apartment|condo|car|truck|land|buildings?|factories|plants?|brand|patents?|pets?|dogs?|cats?)\\b)|get (?:in|into|out)(?!\\s+(?:of here|here|how|why)\\b)(?![\\w\\s']{0,25}\\b(?:margins?|revenues?|numbers|details|figures|filings|cash flow|profits?|earnings|liabilities|debt|reports?|lesson|quiz|topic|basics|concepts?|questions?|balance sheets?|income statements?|statements?|10-?[kq]|chapter|section|part)\\b)|(?:jump|hop|pile) (?:in|into|on)(?!\\s+(?:here|it|board)\\b)(?![\\w\\s']{0,25}\\b(?:margins?|revenues?|numbers|details|figures|filings|cash flow|profits?|earnings|liabilities|debt|reports?|lesson|quiz|topic|basics|concepts?|questions?|balance sheets?|income statements?|statements?|10-?[kq]|chapter|section|part|game|story|story)\\b)|add (?:more|some|a little(?: more)?|a bit(?: more)?|a few(?: more)?)(?!\\s+(?:of\\s+)?(?:\\w+\\s+)?(?:stores?|products?|items?|features?|lines?|services?|locations?|jobs?|workers?|staff|employees|details?|examples?|notes?|questions?|words?|context|pictures?|charts?|cards?|quiz|practice|numbers|figures|colou?rs?|flavou?rs?|menu)\\b)|go all in|keep(?!\\s+(?:the|a|an|this|that|it|them|going|learning|reading|practicing|track|in|up|on|my|our)\\b)|stay (?:in|invested)(?!\\s+(?:the|this|that|school|touch|mind|bed|here)\\b)|exit(?!\\s+(?:the|this|that|lesson|quiz|here)\\b)|load up|cash out|take profits?|get some|pick up some|grab some|go long|average (?:down|up)|bail on(?!\\s+(?:the|this|that|it)\\b))";
 const PERSON="(i|i'm|im|we|we're|you|my (?![\\w]+'s)\\w+|our (?![\\w]+'s)\\w+|their (?:kids?|children|family)|the (?:kids?|children|family)|kids?|children|family|daughter|son)";
-const MONEY='(savings|money|retirement|401\\(?k\\)?|ira|pension|nest egg|funds?|portfolio|allowance|pocket money)';
+const MONEY='(savings|money|retirement|401\\(?k\\)?|ira|pension|nest egg|funds?|portfolio|allowance|pocket money|bonus|paycheck|salary|inheritance|windfall|tax refund|spare cash|extra cash)';
 const METRIC='(revenues?|sales|margins?|profits?|income|earnings|cash|costs?|debt|expenses?)';
 // People who pick stocks for a living: asking what they buy is asking for a pick.
 const PICKERS='(investors?|analysts?|hedge funds?|fund managers?|the experts|experts|the pros|pros|billionaires?|insiders?|buffett|wall street|traders?)';
@@ -31,7 +31,7 @@ const ADVICE:Rule[]=[
  new RegExp(`\\b(what|which)\\b.{0,20}\\b${PICKERS}\\b.{0,20}\\b(buy|buying|sell|selling|own|owning|pick|picking|recommend|like(?!\\s+to\\b))\\b`),
  new RegExp(`\\b${PICKERS}\\b.{0,15}\\b(say|said|rate|rating|call)\\b.{0,15}\\b(buy|sell|hold)\\b`),
  /\bkeep (my|our)\b.{0,20}\b(shares|stocks?)\b/,
- new RegExp(`\\b(smart|wise|good|right|best|bad|better|ok|okay|safe|time|worth|whether|too late|too early|sense)( [\\w$,']+){0,2}? to ${TRADE}\\b`),
+ new RegExp(`\\b(smart|wise|good|right|best|bad|better|ok|okay|safe|time|moment|window|worth|whether|too late|too early|sense)( [\\w$,']+){0,3}? to ${TRADE}\\b`),
  new RegExp(`\\b(worth|thinking (about|of)|considering) ${TRADE}\\b`),
  new RegExp(`\\b(should|shall|must|can|could|do|would|will) (i|we)\\b.{0,50}\\b${TRADE}\\b`),
  new RegExp(`\\b(should|shall|must|would) (he|she|they)\\b.{0,50}\\b${TRADE}\\b`),
@@ -61,6 +61,8 @@ const ADVICE:Rule[]=[
  {test:t=>/\b(i|we|my|our|you|your)\b/.test(t) && new RegExp(`\\b(how much|what percentage|what percent|what share|what portion)\\b.{0,40}\\b(put|weight|exposure|go into|(my|our)\\s+${MONEY})\\b`).test(t)},
  // "What stock should my daughter start with?": asking which stock to choose is a pick, whatever the verb.
  /\b(what|which)\s+(stocks?|shares|tickers?)\s+(should|would|could|can|do|does|to|is|are|might)\b(?!.{0,40}\b(learn|learning|study|read|look at|research|explore|review|quiz|compare|mean|means|trade|trades|listed|called)\b)/,
+ // "What company should I put my bonus into?": choosing a company or fund for someone's money is a pick.
+ new RegExp(`\\b(what|which)\\s+(company|companies|fund|funds|etfs?|index funds?|one)\\b.{0,20}\\b(should|would|could|can|do|to)\\s+${PERSON}\\b.{0,30}\\b(put|invest|buy|bet|park|start with|go with|choose|pick|own|back)\\b`),
  // Asking for a forecast of a stock or the market ("Predict where Tesla's stock will be").
  /\b(predict|forecast|guess|project)\b.{0,40}\b(stocks?|shares|share price|stock price|market|ticker)\b/,
  // "Is investing in Apple smart?": judging a trade, with the judgment anywhere after it.
@@ -82,7 +84,7 @@ const BUSINESS_USE=[
 ];
 // Learning about investing is a lesson ("Teach my kids about investing"), unless it names where to put money.
 const LESSON=/\b(learn|learning|teach|teaching|explain|explaining|understand|know|study|read)\b(\s+(?!(should|whether|if|which|what|best|top|safest|safer|good|great|cheap|cheapest)\b)[\w']+){0,5}?\s+(about\s+|how\s+(to\s+)?|to\s+)?(investing|invest|investments?|stocks?|bonds?|shares|the stock market)\b(\s+(and|or)\s+(investing|stocks?|bonds?|shares))?(?!\s+(in|into|on|my|our|his|her|their)\b|\s*\$|\s+\d)/g;
-const MOVE="(go(?:es|ing)? up|go(?:es|ing)? down|go(?:es|ing)? higher|rises?|rising|falls?|falling|rall(?:y|ies)|crash(?:es)?|outperform|doubles?|increases?|recovers?|drops?|dropping|tanks?|soars?|jumps?|climbs?|climbing|plunges?|sinks?|heading (?:higher|lower)|bounces? back|rebounds?|be (?:higher|lower))";
+const MOVE="(bounc(?:e|es|ing)(?: back)?|surg(?:e|es|ing)|spik(?:e|es|ing)|slump(?:s|ing)?|tumbl(?:e|es|ing)|turn(?:s|ing)? around|go(?:es|ing)? up|go(?:es|ing)? down|go(?:es|ing)? higher|rises?|rising|falls?|falling|rall(?:y|ies)|crash(?:es)?|outperform|doubles?|increases?|recovers?|drops?|dropping|tanks?|soars?|jumps?|climbs?|climbing|plunges?|sinks?|heading (?:higher|lower)|bounces? back|rebounds?|be (?:higher|lower))";
 const PREDICTION=new RegExp(`\\b(will|could|can|going to|likely to|gonna|keep)\\b.{0,60}\\b${MOVE}(?![\\w-])|\\bheading (higher|lower)\\b`);
 // "Tell me if the stock goes up tomorrow": asking whether something moves, or a move by a future date, is a forecast.
 const ASKED_MOVE=new RegExp(`\\b(tell me|let me know|do you know|you think|guess|bet|predict)\\b.{0,15}\\b(if|whether|when)\\b.{0,40}\\b${MOVE}(?![\\w-])`);
