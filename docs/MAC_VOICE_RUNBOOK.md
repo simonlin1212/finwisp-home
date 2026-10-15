@@ -1,73 +1,71 @@
-# Simon 的 Mac 语音运行指南
+# Mac voice runbook
 
-此仓库当前在构建机 `/workspace/finwisp-home`，不是已经放在你的 Mac 上。需要 Node **20.19 或更高版本**、npm、已安装且已登录的 Codex CLI。普通页面和规则式教学不启动模型；只有选择 Codex 语音并点击麦克风才会启动实验性语音会话。Codex 语音走 WebRTC，用 ChatGPT 登录的 Codex 即可；2026-10-15 已用合成语音在 Chrome 上实测连通（见 [VOICE.md](VOICE.md)），真实麦克风和扬声器尚未实测。
+Requires Node **20.19 or later**, npm, and an installed Codex CLI that is already signed in. The regular page and rule-based lessons do not start a model; an experimental voice session starts only when Codex voice is selected and the microphone button is clicked. Codex voice uses WebRTC and works with a ChatGPT login to Codex. Connectivity was tested in Chrome with synthetic speech on 2026-10-15 (see [VOICE.md](VOICE.md)); a real microphone and speakers have not yet been tested.
 
-## 1. 把项目放到 Mac
+## 1. Get the project onto a Mac
 
-我们准备的压缩包在构建机 `/workspace/finwisp-home.tgz`（Grok 可用 CopyFromBox 直接放到你的 Mac）。请 Simon 用已有的文件传输方式复制到 Mac，例如下载到 `~/Downloads/finwisp-home.tgz`。这里不需要 Git remote、密码或 SSH 配置。以下路径可替换为你实际保存的位置：
+Clone the public repo:
 
 ```sh
-mkdir -p ~/Projects
-tar -xzf ~/Downloads/finwisp-home.tgz -C ~/Projects
-cd ~/Projects/finwisp-home
+git clone https://github.com/simonlin1212/finwisp-home && cd finwisp-home
 node --version
 npm --version
 command -v codex
 codex login status
 ```
 
-`codex login status` 已在本机 CLI 的 `codex login --help` 中确认存在；只查询登录状态，不启动模型。若尚未登录，在 Mac 上运行以下命令，按浏览器提示自行登录：
+`codex login status` was confirmed in the local CLI's `codex login --help`; it only checks login status and does not start a model. If not yet signed in, run the following on the Mac and follow the browser prompts to sign in:
 
 ```sh
 codex login
 ```
 
-无需修改 `~/.codex/config.toml`。CLI 官方说明见 [OpenAI 命令参考](https://developers.openai.com/codex/cli/reference)。若 Mac 安装的版本不同，先运行 `codex login --help` 核实 `status` 子命令。
+There is no need to modify `~/.codex/config.toml`. See the official [OpenAI command reference](https://developers.openai.com/codex/cli/reference). If the version installed on the Mac differs, first run `codex login --help` to verify the `status` subcommand.
 
-## 2. 安装和启动
+## 2. Install and start
 
 ```sh
 npm ci
-export SEC_CONTACT_EMAIL='<组织用于 SEC 联系的邮箱>'
+export SEC_CONTACT_EMAIL='<organization contact email for SEC requests>'
 VOICE_ENGINE=codex npm run hub
 ```
 
-请把占位符替换为组织联系地址，不使用个人邮箱，不录入或提交到仓库。环境变量不会自动从 `.env` 加载。`npm run hub` 会先构建网页，再启动服务，默认地址为：
+Replace the placeholder with an organization contact address. Do not use a personal email or enter or commit the address in the repository. Environment variables are not automatically loaded from `.env`. `npm run hub` builds the web UI before starting the service. Open the default address:
 
 ```sh
 open 'http://127.0.0.1:8796/?demo=1'
 ```
 
-在浏览器中确认 **Voice engine** 为 **Codex · preview**，点击 **Tap to speak**，允许麦克风权限。说 “COST net margin”。预期有英文转写和语音输出；Codex 先说一句“正在查”，几十秒后才报出财报数字。Codex 语音的回答由模型生成；它的工具输出尚不映射到网页学习卡片。要可靠展示卡片、测验、工具调用状态和记忆，选择 **Browser**，再次点击麦克风，或者在输入框输入同一句并点击 **Explore →**。点击 **End voice** 停止 Codex 音频。
+In the browser, confirm that **Voice engine** is **Codex · preview**, click **Tap to speak**, and allow microphone access. Say “COST net margin”. Expect an English transcript and spoken output; Codex first says it is checking, then reports the financial figures after a few dozen seconds. Codex voice responses are model-generated; its tool output is not yet mapped to the web learning cards. To reliably demonstrate cards, quizzes, tool-call status, and memory, select **Browser** and click the microphone again, or type the same phrase in the input box and click **Explore →**. Click **End voice** to stop Codex audio.
 
-录制前点击 **Reset demo profile** 清空 `family` 记忆。页面 `?demo=1` 仍显示工具 chips、状态和毫秒耗时。
+Before recording, click **Reset demo profile** to clear `family` memory. The `?demo=1` page still shows tool chips, status, and elapsed time in milliseconds.
 
-## 3. 排查
+## 3. Troubleshooting
 
-- **麦克风不可用**：在浏览器站点权限及 macOS 系统设置的隐私与安全性 → 麦克风中允许浏览器访问；重新打开 localhost 页面。使用支持 Web Speech 的浏览器测试 Browser 模式；也可直接输入文字。
-- **找不到 codex**：用 `command -v codex` 检查。若已安装在非 PATH 目录，可把实际可执行文件路径传给项目支持的环境变量：
+- **Microphone unavailable**: Allow browser access in the browser's site permissions and in macOS System Settings → Privacy & Security → Microphone, then reopen the localhost page. Test Browser mode in a browser that supports Web Speech; text input is also available.
+- **codex not found**: Check with `command -v codex`. If it is installed outside PATH, pass the actual executable path through the environment variable supported by this project:
 
   ```sh
-  CODEX_EXECUTABLE='/实际路径/codex' VOICE_ENGINE=codex npm run hub
+  CODEX_EXECUTABLE='/actual/path/codex' VOICE_ENGINE=codex npm run hub
   ```
 
-- **8796 被占用**：不要停止已有服务。让自己的新服务选随机端口：
+- **Port 8796 in use**: Do not stop the existing service. Let the new service choose a random port:
 
   ```sh
   HUB_PORT=0 VOICE_ENGINE=codex npm run hub
   ```
 
-  打开终端打印的 `Finwisp Home` 地址并追加 `?demo=1`，不要继续使用固定 8796 地址。
-- **Codex 语音失败**：页面会提示回退并选择 Browser。再点击一次麦克风启动浏览器识别；文字输入始终可用。可以停止自己刚启动的服务，再用纯浏览器模式运行：
+  Open the `Finwisp Home` address printed in the terminal and append `?demo=1`; do not keep using the fixed port 8796 address.
+- **Codex voice fails**: The page displays a fallback notice and selects Browser. Click the microphone again to start browser recognition; text input is always available. Alternatively, stop the service just started and run in browser-only mode:
 
   ```sh
   VOICE_ENGINE=browser npm run hub
   ```
 
-- **SEC 请求失败**：检查组织联系邮箱环境变量和网络；页面会保留拒绝建议的边界并显示 SEC 数据不可用，不会编造数字。
+- **SEC requests fail**: Check the organization contact email environment variable and the network. The page preserves its advice-refusal boundary and reports that SEC data is unavailable rather than inventing figures.
 
-## 4. 停止
+## 4. Stop
 
-先点击 **End voice**（如果正在语音），再在启动服务的终端按 **Ctrl+C**。宿主会关闭自己持有的 MCP 服务和语音子进程。不要终止其他人运行的 hub。
+Click **End voice** first if voice is active, then press **Ctrl+C** in the terminal running the service. The host closes the MCP service and voice subprocesses it owns. Do not terminate anyone else's hub.
 
-本指南引用的 npm 脚本、`HUB_PORT`、`VOICE_ENGINE`、`SEC_CONTACT_EMAIL`、`CODEX_EXECUTABLE` 均已核对项目源码；Codex 登录命令已核对 CLI help。Codex 语音的实测范围见 [VOICE.md](VOICE.md)。
+The npm scripts and the `HUB_PORT`, `VOICE_ENGINE`, `SEC_CONTACT_EMAIL`, and `CODEX_EXECUTABLE` variables cited here have been checked against the project source; the Codex login commands have been checked against CLI help. See [VOICE.md](VOICE.md) for the scope of Codex voice testing.

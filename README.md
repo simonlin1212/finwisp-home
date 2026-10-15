@@ -117,7 +117,7 @@ The Hub has larger responsive typography, an animated horizontal learning rail w
 
 The rule-based continue flow retrieves missed concepts, shows review cards, and generates a three-question re-quiz restricted to those concepts. Grading refreshes the memory panel. Named-company refusals retrieve actual SEC facts for revenue growth, net margin and liabilities/assets; unavailable data is labelled explicitly. Spoken refusal text is brief.
 
-Recording: [2:45 demo script](docs/DEMO_SCRIPT.md). Mac setup: [中文语音指南](docs/MAC_VOICE_RUNBOOK.md). Codex voice is an experimental preview that answers by voice; the card/quiz flows are shown with Browser voice or text.
+Recording: [2:45 demo script](docs/DEMO_SCRIPT.md). Mac setup: [Mac voice runbook](docs/MAC_VOICE_RUNBOOK.md) (Chinese: [MAC_VOICE_RUNBOOK.zh.md](docs/MAC_VOICE_RUNBOOK.zh.md)). Codex voice is an experimental preview that answers by voice; the card/quiz flows are shown with Browser voice or text.
 
 `node_modules/.bin/tsx scripts/demo-flow-check.ts` verifies live SEC refusal cards and the complete lesson → grade → memory → re-quiz → reset flow on a random port, using a temporary profile directory and no model session.
 
