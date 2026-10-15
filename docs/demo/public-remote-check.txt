@@ -1,4 +1,4 @@
-# Live check against the public endpoint (2026-10-15 14:06 SGT)
+# Live check against the public endpoint (2026-10-15 14:35 SGT, after redeploy with per-caller profile isolation)
 # command: npm run remote-check -- https://finwisp-home-mcp.linsizhen.workers.dev/mcp
 Server: { name: 'finwisp-home', version: '0.1.0' }
 Protocol: 2025-11-25
@@ -282,7 +282,7 @@ get_financials: {
       ]
     }
   ],
-  "source": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000072971.json",
+  "source": "https://data.sec.gov/api/xbrl/companyconcept/CIK0000072971/us-gaap/",
   "note": "Educational use only, not investment advice."
 }
 compute_metrics: {
