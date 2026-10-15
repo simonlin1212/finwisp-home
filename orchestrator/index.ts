@@ -3,6 +3,7 @@ import { glossary } from '../mcp-server/glossary.js';
 import { isAdvice, policyResponse } from '../mcp-server/policy.js';
 import { profileId } from '../mcp-server/memory.js';
 import { aliasTicker, displayName } from '../mcp-server/companies.js';
+import { NOT_APPLICABLE_FOR } from '../mcp-server/education.js';
 export const plan = ['lookup','filings','financials','compute','cards','quiz'] as const;
 export type StepEvent = { step: string; status: 'started'|'completed'|'failed'; result?: unknown; tool?: string; error?: string; call_id?: string; duration_ms?: number };
 export type ToolCaller = (name:string,args:Record<string,unknown>)=>Promise<any>;
@@ -11,10 +12,10 @@ export async function withMcp<T>(url:string,work:(call:ToolCaller)=>Promise<T>):
  try {await client.connect(transport);return await work(async(name,args)=>{const r=await client.callTool({name,arguments:args});if(r.isError) throw new Error((r.structuredContent as any)?.error ?? 'MCP tool failed');return r.structuredContent ?? JSON.parse((r.content as any[]).find(c=>c.type==='text').text);});}
  finally {await transport.terminateSession().catch(()=>{});await client.close();}
 }
-const aliases:Record<string,string>={revenue:'revenue_growth_yoy',growth:'revenue_growth_yoy',profitability:'net_margin','net income':'net_margin',liabilities:'liabilities_to_assets',cash:'operating_cash_conversion'};
+const aliases:Record<string,string>={'net interest':'net_interest_share',revenue:'revenue_growth_yoy',growth:'revenue_growth_yoy',profitability:'net_margin','net income':'net_margin',liabilities:'liabilities_to_assets',cash:'operating_cash_conversion'};
 // Capitalised words people use in questions that are not the ticker they mean.
 const NOT_TICKERS=new Set(['I','A','OK','OKAY','HEY','ALEXA','US','USA','UK','EU','AI','CEO','CFO','CTO','IPO','EPS','PE','ETF','YOY','CAGR','FY','TTM','YTD','USD','GAAP','SEC','ROI','ROE','EBIT','EBITDA','API','IT','HR','PR','TV','PC','EV','EVS','GPU','CPU','AM','PM','INC','CO','LLC','LTD','NYSE','WHAT','HOW','WHY','WHO','WHEN','NO','YES','ME','MY']);
-const FILLER=/\b(ok|okay|hey|alexa|please|can|could|would|you|teach|me|us|about|explain|show|tell|learn|quiz|lesson|more|what|how|why|does|did|do|is|are|was|sell|sells|sold|buy|buys|bought|make|makes|made|offer|offers|own|owns|the|a|an|of|for|on|in|at|to|and|with|from|its|this|last|year|net|margins?|revenues?|growth|profitability|profits?|earnings|income|sales|cash|flow|operating|gross|trend|liabilities|assets|debt|conversion|ratio|metrics?|financials?|finances|reports?|company|stock|shares?|yoy|cagr)\b/gi;
+const FILLER=/\b(ok|okay|hey|alexa|please|can|could|would|you|teach|me|us|about|explain|show|tell|learn|quiz|lesson|more|what|how|why|does|did|do|is|are|was|sell|sells|sold|buy|buys|bought|make|makes|made|offer|offers|own|owns|the|a|an|of|for|on|in|at|to|and|with|from|its|this|last|year|net|margins?|revenues?|growth|profitability|profits?|earnings|income|sales|cash|flow|interest|operating|gross|trend|liabilities|assets|debt|conversion|ratio|metrics?|financials?|finances|reports?|company|stock|shares?|yoy|cagr)\b/gi;
 export function parseIntent(text:string) {
  const topic=Object.keys(glossary).find(k=>text.toLowerCase().includes(k.replaceAll('_',' ')) || text.toLowerCase().includes(k)) ?? Object.keys(aliases).find(k=>new RegExp(`\\b${k}\\b`,'i').test(text)) ?? 'net_margin';
  // A known company name beats a capitalised word ("OK teach me Tesla", "Apple's AI").
@@ -40,13 +41,16 @@ export async function teachWith(call:ToolCaller,company:string,topic='net_margin
  const companyLabel=displayName(match.ticker,match.title);
  const filings=await run('filings','get_filings',{ticker_or_cik:match.cik,form:'10-K',limit:3});
  const financials=await run('financials','get_financials',{ticker_or_cik:match.cik,years:3});
- const compute=await run('compute','compute_metrics',{financials:financials.financials});
- const cards=await run('cards','make_card',{type:'trend',metric,computed:compute.computed,company:companyLabel});
- const conceptCard=await call('make_card',{type:'concept',metric,computed:[],company:companyLabel});
- const metricCard=await call('make_card',{type:'metric',metric,computed:compute.computed,company:companyLabel});
+ const compute=await run('compute','compute_metrics',{financials:financials.financials,...(/^\d{4}$/.test(filings.sic ?? '')?{sic:filings.sic}:{})});
+ // Banks get bank-appropriate cards: gross/operating margin explain why they do not apply, plus a net-interest-share card.
+ const model:'bank'|'general'=compute.businessModel==='bank'?'bank':'general',bm=model==='bank'?{business_model:model}:{};
+ const cards=await run('cards','make_card',{type:'trend',metric,computed:compute.computed,company:companyLabel,...bm});
+ const conceptCard=await call('make_card',{type:'concept',metric,computed:[],company:companyLabel,...bm});
+ const metricCard=await call('make_card',{type:'metric',metric,computed:compute.computed,company:companyLabel,...bm});
  const hasFigures=financials.financials.some((f:any)=>f.values.length);
  cards.items=hasFigures?[cards.card,conceptCard.card,metricCard.card]:[cards.card,conceptCard.card];
- const quiz=await run('quiz','make_quiz',{computed:compute.computed});
+ if(model==='bank' && metric!=='net_interest_share' && hasFigures) cards.items.push((await call('make_card',{type:'metric',metric:'net_interest_share',computed:compute.computed,company:companyLabel,...bm})).card);
+ const quiz=await run('quiz','make_quiz',{computed:compute.computed.filter((c:any)=>!NOT_APPLICABLE_FOR[model].includes(c.metric))});
  let profile;
  if(id) {await call('update_learning_profile',{profile_id:id,event:{type:'company',company:match.ticker}});await call('update_learning_profile',{profile_id:id,event:{type:'concept',concept:metric}});profile=await call('update_learning_profile',{profile_id:id,event:{type:'session',summary:`Reviewed ${match.ticker}: ${metric.replaceAll('_',' ')}.`}});}
  // Foreign issuers file 20-F, not 10-K, so there is nothing to compute; say so instead of showing empty cards.

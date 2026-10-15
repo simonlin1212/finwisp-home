@@ -24,7 +24,7 @@ export function handlers(sec: SecEdgar) {
       const filings = recent.accessionNumber.map((accessionNumber: string, i: number) => ({ form: recent.form[i], filingDate: recent.filingDate[i], accessionNumber,
         primaryDocumentUrl: `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accessionNumber.replaceAll('-', '')}/${recent.primaryDocument[i]}` }))
         .filter((row: any) => !form || row.form === form).slice(0, limit);
-      return { cik, filings, source: `https://data.sec.gov/submissions/CIK${cik}.json`, note: NOTE };
+      return { cik, ...(typeof data.sic === 'string' && data.sic ? { sic: data.sic, sicDescription: String(data.sicDescription ?? '') } : {}), filings, source: `https://data.sec.gov/submissions/CIK${cik}.json`, note: NOTE };
     },
     get_financials: async (args: unknown) => {
       const { ticker_or_cik, metrics, years } = schemas.get_financials.parse(args);

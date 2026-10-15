@@ -97,3 +97,16 @@ The rule-based continue flow retrieves missed concepts, shows review cards, and 
 Recording: [2:45 demo script](docs/DEMO_SCRIPT.md). Mac setup: [中文语音指南](docs/MAC_VOICE_RUNBOOK.md). Codex voice is an experimental preview that answers by voice; the card/quiz flows are shown with Browser voice or text.
 
 `node_modules/.bin/tsx scripts/demo-flow-check.ts` verifies live SEC refusal cards and the complete lesson → grade → memory → re-quiz → reset flow on a random port, using a temporary profile directory and no model session.
+
+### Bank-aware cards
+
+Banks such as Wells Fargo and JPMorgan do not report gross profit, cost of revenue or operating income. For them, Finwisp Home detects the bank from the filing data: the company reports net interest income, or has a bank SIC code, and has none of the industrial lines. It then explains why gross margin and operating margin do not apply, instead of saying "insufficient data", and adds a **Net Interest Share** card (net interest income ÷ revenue, group "HOW BANKS EARN"). Other companies, such as Caterpillar, keep the existing behaviour. `scripts/live-bank-check.ts` checks this against live SEC data and writes `docs/LIVE_BANK_CHECK.md`.
+
+### Kiro and the AWS Builder mini-challenge (honest status)
+
+- The `.kiro/steering/` files and the `.kiro/specs/bank-aware-cards/` spec (requirements, design, tasks) were written for Kiro.
+- Kiro CLI 2.31.1 and Kiro Crew 0.8.0 were installed and signed in with an AWS Builder ID on the build box. Kiro Crew ran on this spec three times on 2026-10-15 (about 28 credits), but **produced no code**:
+  - Headless `kirocrew run` had every file write rejected. This was true even with `dangerously_skip_permissions` on, because kiro-cli still refused writes with `headless_no_authorization`.
+  - One run failed at spec decomposition because of free-tier Bedrock throttling.
+- **The feature was then implemented manually.** Kiro did not write the code. See `docs/KIRO_LOG.md` and `FRICTION_LOG.md` #22–26.
+- It is **uncertain** whether this counts for the AWS Builder mini-challenge. The rules say Kiro Crew qualifies as a development tool, but here Crew was used for planning attempts only.

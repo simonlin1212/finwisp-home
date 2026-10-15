@@ -6,4 +6,5 @@ export const glossary: Record<string, string> = {
   cagr: 'The steady yearly growth rate that would connect the first and last values.',
   liabilities_to_assets: 'What the company owes divided by what it owns. This is not the same as debt alone.',
   operating_cash_conversion: 'Cash from normal business activities divided by net profit. Profit and cash can differ.',
+  net_interest_share: 'The share of a bank’s revenue that comes from interest it earns on loans minus the interest it pays on deposits.',
 };
